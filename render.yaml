@@ -2,11 +2,13 @@ services:
   - type: web
     name: api-arkia
     runtime: node
-    buildCommand: npm install && npx playwright install chromium --with-deps
+    buildCommand: npm install && PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/.playwright npx playwright install chromium --with-deps
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: /opt/render/project/src/.playwright
       - key: AUTOMATION_URL
         sync: false
       - key: AUTOMATION_USER
