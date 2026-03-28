@@ -66,15 +66,15 @@ async function enterPassengerInfo(page, paxRows, isLast) {
     await box.getByRole("textbox", { name: /zip/i }).fill(val(pax, "ZIP"));
 
     // ── Document ───────────────────────────────────────────────────
-    await box.getByRole("textbox", { name: /document number/i }).fill(val(pax, "Document Number"));
+    await box.getByRole("textbox", { name: /document number/i }).first().fill(val(pax, "Document Number"));
 
     // Document Type: try option value "P" first, fall back to text "Passport"
-    const docType = box.getByRole("combobox", { name: /document type/i });
+    const docType = box.getByRole("combobox", { name: /document type/i }).first();
     await docType.selectOption("P").catch(async () => {
       await docType.selectOption("Passport");
     });
 
-    await box.getByRole("textbox", { name: /country of issuance/i })
+    await box.getByRole("textbox", { name: /country of issuance/i }).first()
       .fill(val(pax, "Country of Issuance"));
 
     // ── Expiration Date (nth 1 within this container) ──────────────
