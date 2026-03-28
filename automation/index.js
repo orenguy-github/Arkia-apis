@@ -16,20 +16,21 @@ const { enterFlightInfo }       = require("./steps/flightInfo");
  * @param {string}   jobId
  * @param {object}   rows  - { flight: {}, pax: [] }
  */
-const AUTOMATION_TIMEOUT_MS = 30_000; // 30 seconds
-
 async function runAutomation(jobId, rows) {
   let browser;
-  const timeout = setTimeout(() => {
-    setStatus(jobId, "error", "התהליך נותק — חרגת מהזמן המקסימלי (2 דקות)");
-    if (browser) browser.close().catch(() => {});
-  }, AUTOMATION_TIMEOUT_MS);
-
   try {
     setStatus(jobId, "running", "מאתחל דפדפן...");
-    browser = await chromium.launch({ headless: config.HEADLESS });
+    browser = await chromium.launch({
+      headless: config.HEADLESS,
+      args: [
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--single-process",
+      ],
+    });
     const page = await browser.newPage();
-    page.setDefaultTimeout(15_000); // 15s per step
+    page.setDefaultTimeout(15_000); // 15s per step — fail fast if stuck
 
     // ── Step 1: Login ──────────────────────────────────────────
     setStatus(jobId, "running", "מתחבר לאתר eAPIS...");
@@ -65,7 +66,6 @@ async function runAutomation(jobId, rows) {
   } catch (err) {
     setStatus(jobId, "error", `שגיאה: ${err.message}`);
   } finally {
-    clearTimeout(timeout);
     if (browser) await browser.close().catch(() => {});
   }
 }
