@@ -1,0 +1,18 @@
+{
+  "name": "api-arkia",
+  "version": "1.0.0",
+  "description": "Excel upload, validation, and automated data-entry portal",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.8.0",
+    "express": "^5.2.1",
+    "multer": "^2.0.0",
+    "playwright": "^1.51.1",
+    "xlsx": "^0.18.5"
+  }
+}

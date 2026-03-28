@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: api-arkia
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+        value: "1"
+      - key: AUTOMATION_URL
+        sync: false
+      - key: AUTOMATION_USER
+        sync: false
+      - key: AUTOMATION_PASS
+        sync: false
+    disk:
+      name: arkia-data
+      mountPath: /var/data
+      sizeGB: 1

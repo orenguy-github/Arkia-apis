@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARKIA · APIS Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+
+  <div class="bg-stars" aria-hidden="true"></div>
+  <div class="bg-glow"  aria-hidden="true"></div>
+
+  <!-- Runway strip at top -->
+  <div class="runway" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span>
+  </div>
+
+  <div class="wrapper">
+
+    <!-- ── Header ──────────────────────────────────────────────── -->
+    <header class="site-header">
+      <div class="logo">
+        <span class="logo-plane" aria-hidden="true">✈</span>
+        <span class="logo-text">ARKIA</span>
+      </div>
+      <div class="sys-badge">
+        <span class="sys-dot"></span>
+        <span>מערכת APIS</span>
+      </div>
+    </header>
+
+    <!-- ── Panel ───────────────────────────────────────────────── -->
+    <div class="panel">
+
+      <!-- Decorative panel top bar -->
+      <div class="panel-topbar">
+        <span class="topbar-label">APIS · ADVANCED PASSENGER INFORMATION</span>
+        <span class="topbar-lights" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </span>
+      </div>
+
+      <!-- ── Screen 1 : Upload ──────────────────────────────── -->
+      <section id="screen-upload" class="active">
+
+        <div class="screen-meta">
+          <span class="step-tag">STEP 01</span>
+          <h1>טעינת קובץ נוסעים</h1>
+          <p class="step-sub">Advanced Passenger Information System · ARKIA IL</p>
+        </div>
+
+        <!-- The label IS the clickable drop zone — no JS .click() needed -->
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        <label for="fileInput" class="drop-zone" id="uploadZone">
+          <div class="dz-body">
+            <div class="dz-icon" aria-hidden="true">
+              <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 6C10 4.895 10.895 4 12 4H28L38 14V38C38 39.105 37.105 40 36 40H12C10.895 40 10 39.105 10 38V6Z" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M28 4V14H38" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M16 22H28" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M16 28H28" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M16 34H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="dz-text">
+              <strong>לחץ לבחירת קובץ Excel</strong>
+              <span>או גרור לכאן · .xlsx / .xls · עד 10MB</span>
+            </div>
+          </div>
+          <div class="dz-selected" id="selectedFileName"></div>
+          <!-- corner brackets -->
+          <b class="c c-tl" aria-hidden="true"></b>
+          <b class="c c-tr" aria-hidden="true"></b>
+          <b class="c c-bl" aria-hidden="true"></b>
+          <b class="c c-br" aria-hidden="true"></b>
+        </label>
+
+        <button class="btn-upload" id="uploadBtn" disabled>
+          <span>שלח לעיבוד</span>
+          <span class="arr" aria-hidden="true">←</span>
+        </button>
+
+      </section>
+
+      <!-- ── Screen 1b : Errors ────────────────────────────── -->
+      <section id="screen-errors">
+
+        <div class="screen-meta">
+          <span class="step-tag err-tag">VALIDATION FAILED</span>
+          <h1>נמצאו שגיאות בקובץ</h1>
+          <p class="step-sub">יש לתקן את השגיאות ולהעלות קובץ חדש</p>
+        </div>
+
+        <div class="err-summary" id="errSummary"></div>
+
+        <div class="err-tabs" id="errTabs"></div>
+
+        <ul class="err-list" id="errList"></ul>
+
+        <div class="err-overflow" id="errOverflow"></div>
+
+        <button class="btn-upload" id="reuploadBtn" style="margin-top:16px">
+          <span>העלה קובץ חדש</span>
+          <span class="arr" aria-hidden="true">←</span>
+        </button>
+
+      </section>
+
+      <!-- ── Screen 2 : Confirm ─────────────────────────────── -->
+      <section id="screen-confirm">
+
+        <div class="screen-meta">
+          <span class="step-tag">STEP 02</span>
+          <h1>אישור טעינה</h1>
+          <p class="step-sub">בדוק את פרטי הקובץ ואשר המשך</p>
+        </div>
+
+        <div class="boarding-pass">
+          <div class="bp-top">
+            <div class="bp-field bp-field-wide">
+              <div class="bp-label">FILENAME</div>
+              <div class="bp-val" id="fileNameDisplay">—</div>
+            </div>
+          </div>
+
+          <div class="bp-tear" aria-hidden="true">
+            <svg viewBox="0 0 520 12" preserveAspectRatio="none">
+              <path d="M0,6 Q13,1 26,6 Q39,11 52,6 Q65,1 78,6 Q91,11 104,6 Q117,1 130,6 Q143,11 156,6 Q169,1 182,6 Q195,11 208,6 Q221,1 234,6 Q247,11 260,6 Q273,1 286,6 Q299,11 312,6 Q325,1 338,6 Q351,11 364,6 Q377,1 390,6 Q403,11 416,6 Q429,1 442,6 Q455,11 468,6 Q481,1 494,6 Q507,11 520,6"
+                    fill="none" stroke="currentColor" stroke-width="1"/>
+            </svg>
+            <span class="bp-airline-stamp">ARKIA · IL · APIS</span>
+          </div>
+
+          <div class="bp-bottom">
+            <div class="bp-field">
+              <div class="bp-label">PASSENGERS</div>
+              <div class="bp-val bp-big" id="rowCountDisplay">0</div>
+            </div>
+            <div class="bp-field">
+              <div class="bp-label">FORMAT</div>
+              <div class="bp-val">EXCEL</div>
+            </div>
+            <div class="bp-field">
+              <div class="bp-label">STATUS</div>
+              <div class="bp-val bp-ready">READY</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="warn-banner" id="warnBanner" style="display:none">
+          <div class="warn-banner-title">
+            <span>⚠</span> <span id="warnCount"></span> אזהרות — ניתן להמשיך
+          </div>
+          <ul class="warn-list" id="warnList"></ul>
+        </div>
+
+        <div class="confirm-row">
+          <button class="btn-ghost" id="cancelBtn">ביטול</button>
+          <button class="btn-confirm" id="confirmBtn">
+            <span>אשר ושלח</span>
+            <span class="arr" aria-hidden="true">←</span>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- ── Screen 3 : Done ────────────────────────────────── -->
+      <section id="screen-done">
+        <div class="done-scene">
+          <div class="done-ring" id="doneRing" aria-hidden="true"></div>
+          <div class="done-glyph" id="doneGlyph"></div>
+          <h1 id="doneTitle"></h1>
+          <p class="done-sub" id="doneDetail"></p>
+          <button class="btn-ghost" id="startOverBtn">טעינה נוספת</button>
+        </div>
+      </section>
+
+    </div><!-- /panel -->
+
+    <!-- ── Footer ──────────────────────────────────────────── -->
+    <footer class="site-footer">
+      <span>ARKIA AIRLINES</span>
+      <span class="ft-sep">·</span>
+      <span>APIS PORTAL</span>
+      <span class="ft-sep">·</span>
+      <span id="footerClock">--:--</span>
+    </footer>
+
+  </div><!-- /wrapper -->
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
