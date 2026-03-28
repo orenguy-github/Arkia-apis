@@ -2,13 +2,11 @@ services:
   - type: web
     name: api-arkia
     runtime: node
-    buildCommand: npm install
+    buildCommand: npm install && npx playwright install chromium --with-deps
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
-        value: "1"
       - key: AUTOMATION_URL
         sync: false
       - key: AUTOMATION_USER
