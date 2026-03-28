@@ -8,25 +8,25 @@
  *   2. Saved Manifest    → open form exists; throw so the job reports an error
  */
 async function selectInboundFlight(page) {
-  // Wait for whichever page loads first
-  await page.waitForLoadState("domcontentloaded");
+  const inboundLink     = page.getByRole("link", { name: "Inbound Flight" });
+  const savedManifest   = page.locator("h1, h2, strong").filter({ hasText: /saved manifest/i });
 
-  const hasSavedManifest = await page
-    .locator("text=You currently have a Saved Manifest")
-    .isVisible()
-    .catch(() => false);
+  // Wait for whichever element appears first (30s total timeout)
+  await Promise.race([
+    inboundLink.waitFor({ state: "visible" }),
+    savedManifest.waitFor({ state: "visible" }),
+  ]);
 
-  if (hasSavedManifest) {
+  if (await savedManifest.isVisible()) {
     throw new Error(
       "התהליך הופסק — קיים טופס פתוח במערכת eAPIS. " +
       "יש להיכנס לאתר ולסיים או לבטל את הטופס לפני שניתן להמשיך."
     );
   }
 
-  await page.waitForSelector('a[href*="flightInfo.do"]');
   await Promise.all([
     page.waitForNavigation({ waitUntil: "domcontentloaded" }).catch(() => {}),
-    page.getByRole("link", { name: "Inbound Flight" }).click(),
+    inboundLink.click(),
   ]);
 }
 

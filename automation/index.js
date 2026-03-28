@@ -16,8 +16,15 @@ const { enterFlightInfo }       = require("./steps/flightInfo");
  * @param {string}   jobId
  * @param {object}   rows  - { flight: {}, pax: [] }
  */
+const AUTOMATION_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+
 async function runAutomation(jobId, rows) {
   let browser;
+  const timeout = setTimeout(() => {
+    setStatus(jobId, "error", "התהליך נותק — חרגת מהזמן המקסימלי (2 דקות)");
+    if (browser) browser.close().catch(() => {});
+  }, AUTOMATION_TIMEOUT_MS);
+
   try {
     setStatus(jobId, "running", "מאתחל דפדפן...");
     browser = await chromium.launch({ headless: config.HEADLESS });
@@ -57,7 +64,8 @@ async function runAutomation(jobId, rows) {
   } catch (err) {
     setStatus(jobId, "error", `שגיאה: ${err.message}`);
   } finally {
-    if (browser) await browser.close();
+    clearTimeout(timeout);
+    if (browser) await browser.close().catch(() => {});
   }
 }
 
