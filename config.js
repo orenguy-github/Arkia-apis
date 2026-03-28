@@ -2,7 +2,7 @@
 
 const path = require("path");
 
-// DATA_DIR: persistent disk mount on Render (/var/data), local db/ in dev
+// DATA_DIR: defaults to local db/ directory (works on all platforms)
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "db");
 
 module.exports = {

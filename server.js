@@ -20,10 +20,18 @@ try {
 
 const uploadRoutes = require("./routes/upload");
 
+const PUBLIC_DIR = path.join(__dirname, "public");
+
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(PUBLIC_DIR));
+
 app.use("/api", uploadRoutes);
+
+// Fallback: serve index.html for any non-API route
+app.get("*", (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, "index.html"));
+});
 
 app.listen(config.PORT, () => {
   console.log(`שרת פועל: http://localhost:${config.PORT}`);
