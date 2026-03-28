@@ -15,10 +15,16 @@ async function acceptTerms(page) {
   // Select "I agree"
   await page.getByRole("radio", { name: "I agree" }).click();
 
-  // Click Next and wait for navigation
+  // Click Next/Submit and wait for navigation
+  // The button may appear as "Next" (text) or "Submit" (value attr)
+  const submitBtn = page
+    .getByRole("button", { name: /^(next|submit)$/i })
+    .or(page.locator('input[type="submit"]'))
+    .first();
+
   await Promise.all([
     page.waitForNavigation({ waitUntil: "domcontentloaded" }).catch(() => {}),
-    page.getByRole("button", { name: "Next" }).click(),
+    submitBtn.click(),
   ]);
 }
 
