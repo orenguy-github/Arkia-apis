@@ -1,7 +1,10 @@
 "use strict";
 
+// Must be set before any Playwright require
+const path = require("path");
+process.env.PLAYWRIGHT_BROWSERS_PATH = path.join(__dirname, ".playwright");
+
 const express = require("express");
-const path    = require("path");
 const config  = require("./config");
 
 // Load .env file if it exists
