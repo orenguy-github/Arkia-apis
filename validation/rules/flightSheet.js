@@ -74,13 +74,19 @@ function validate(data) {
   if (isEmpty(depAp))                   err("Departure Airport", "שדה חובה ריק");
   else if (!/^[A-Z]{3}$/.test(depAp))  err("Departure Airport", `פורמט IATA שגוי: "${depAp}" — נדרש 3 אותיות גדולות`);
 
-  // ── Departure Date: MM/DD/YYYY ──────────────────────────────────
+  // ── Departure Date: MM/DD/YYYY + not in the past ───────────────
   const depDateStr = String(get("Departure Date") ?? "").trim();
   let depDate = null;
   if (isEmpty(depDateStr)) err("Departure Date", "שדה חובה ריק");
   else {
     depDate = parseDate(depDateStr);
-    if (!depDate) err("Departure Date", `תאריך לא תקין: "${depDateStr}" — נדרש MM/DD/YYYY`);
+    if (!depDate) {
+      err("Departure Date", `תאריך לא תקין: "${depDateStr}" — נדרש MM/DD/YYYY`);
+    } else {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      if (depDate < today)
+        err("Departure Date", `תאריך יציאה (${depDateStr}) הוא בעבר — נדרש תאריך היום או עתיד`);
+    }
   }
 
   // ── Departure Time: HH:MM (warning if H:MM) ────────────────────
@@ -93,32 +99,50 @@ function validate(data) {
   if (isEmpty(destAp))                    err("Destination Airport", "שדה חובה ריק");
   else if (!/^[A-Z]{3}$/.test(destAp))   err("Destination Airport", `פורמט IATA שגוי: "${destAp}" — נדרש 3 אותיות גדולות`);
 
-  // ── Destination Date: MM/DD/YYYY + >= Departure Date ───────────
+  // ── Destination Date: MM/DD/YYYY + >= dep + within 30 days ─────
   const destDateStr = String(get("Destination Date") ?? "").trim();
   let destDate = null;
   if (isEmpty(destDateStr)) err("Destination Date", "שדה חובה ריק");
   else {
     destDate = parseDate(destDateStr);
-    if (!destDate)
+    if (!destDate) {
       err("Destination Date", `תאריך לא תקין: "${destDateStr}" — נדרש MM/DD/YYYY`);
-    else if (depDate && destDate < depDate)
-      err("Destination Date", `תאריך יעד (${destDateStr}) לפני תאריך יציאה (${depDateStr})`);
+    } else {
+      if (depDate && destDate < depDate)
+        err("Destination Date", `תאריך יעד (${destDateStr}) לפני תאריך יציאה (${depDateStr})`);
+
+      const maxDest = new Date(); maxDest.setDate(maxDest.getDate() + 30); maxDest.setHours(0, 0, 0, 0);
+      if (destDate > maxDest)
+        err("Destination Date", `תאריך יעד (${destDateStr}) חורג מ-30 יום מהיום`);
+    }
   }
 
-  // ── Destination Time: HH:MM (warning if H:MM) ──────────────────
-  const destTime = validateTime(get("Destination Time"), "Destination Time");
+  // ── Destination Time: same-day check + HH:MM ───────────────────
+  const destTimeRaw = get("Destination Time");
+  const destTime = validateTime(destTimeRaw, "Destination Time");
   errors.push(...destTime.errors);
   warnings.push(...destTime.warnings);
+
+  // If same departure and destination date, destination time must be >= departure time
+  if (depDate && destDate && depDate.getTime() === destDate.getTime() &&
+      destTime.errors.length === 0 && depTime.errors.length === 0) {
+    const [dh, dm] = String(get("Departure Time") || "").split(":").map(Number);
+    const [ah, am] = String(destTimeRaw || "").split(":").map(Number);
+    if (!isNaN(dh) && !isNaN(ah) && (ah * 60 + am) < (dh * 60 + dm))
+      err("Destination Time", `שעת הגעה (${destTimeRaw}) לפני שעת יציאה (${get("Departure Time")}) באותו יום`);
+  }
 
   // ── Crew: integer >= 0 ──────────────────────────────────────────
   const crew = get("Crew");
   if (isEmpty(crew) && crew !== 0)         err("Crew", "שדה חובה ריק");
   else if (!/^\d+$/.test(String(crew).trim())) err("Crew", `פורמט שגוי: "${crew}" — מספר שלם בלבד`);
 
-  // ── Passengers: integer >= 0 ────────────────────────────────────
+  // ── Passengers: integer >= 0, max 50 per eAPIS submission ───────
   const pax = get("Passengers");
-  if (isEmpty(pax) && pax !== 0)           err("Passengers", "שדה חובה ריק");
+  if (isEmpty(pax) && pax !== 0)              err("Passengers", "שדה חובה ריק");
   else if (!/^\d+$/.test(String(pax).trim())) err("Passengers", `פורמט שגוי: "${pax}" — מספר שלם בלבד`);
+  else if (Number(pax) > 50)
+    warn("Passengers", `ערך ${pax} חורג ממגבלת 50 נוסעים לטעינה אחת — יוזנו 50 בלבד`);
 
   // ── In-transit Passengers: integer >= 0 ────────────────────────
   const transit = get("In-transit Passengers");

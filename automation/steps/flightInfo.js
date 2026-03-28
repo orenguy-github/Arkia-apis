@@ -67,8 +67,9 @@ async function enterFlightInfo(page, flight) {
   await page.getByRole("textbox", { name: /crew/i })
     .fill(String(flight["Crew"] || "0"));
 
+  const paxValue = Math.min(Number(flight["Passengers"] || 0), 50);
   await page.getByRole("textbox", { name: /^passengers/i })
-    .fill(String(flight["Passengers"] || "0"));
+    .fill(String(paxValue));
 
   await page.getByRole("textbox", { name: /in-transit/i })
     .fill(String(flight["In-transit Passengers"] || "0"));
