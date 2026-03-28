@@ -1,23 +1,26 @@
 "use strict";
 
 /**
- * Step: Log in to the external website.
+ * Step: Log in to the eAPIS portal.
+ * URL: https://eapis.cbp.dhs.gov/eapis/auth
  *
- * TODO: Once the target site URL and login form are known:
- *   1. Set AUTOMATION_URL in .env
- *   2. Replace selector placeholders below with real CSS selectors
- *   3. Remove the throw at the bottom
- *   4. Add any 2FA / CAPTCHA handling if needed
+ * Selectors discovered via Playwright inspection:
+ *   - Sender ID:  textbox[name="Sender ID:"]
+ *   - Password:   textbox[name="Password"]
+ *   - Login btn:  button[name="Log In"]
  */
 async function login(page, config) {
-  await page.goto(config.AUTOMATION_URL);
+  await page.goto(config.AUTOMATION_URL, { waitUntil: "domcontentloaded" });
 
-  // await page.fill("#username",  config.AUTOMATION_USER);
-  // await page.fill("#password",  config.AUTOMATION_PASS);
-  // await page.click("#login-btn");
-  // await page.waitForNavigation({ waitUntil: "networkidle" });
+  // Fill credentials
+  await page.getByRole("textbox", { name: "Sender ID:" }).fill(config.AUTOMATION_USER);
+  await page.getByRole("textbox", { name: "Password" }).fill(config.AUTOMATION_PASS);
 
-  throw new Error("שלב ההתחברות טרם הוגדר — יש להגדיר סלקטורים ב-automation/steps/login.js");
+  // Submit and wait for navigation to Terms & Conditions page
+  await Promise.all([
+    page.waitForURL(/ecomm\/entry/),
+    page.getByRole("button", { name: "Log In" }).click(),
+  ]);
 }
 
 module.exports = { login };

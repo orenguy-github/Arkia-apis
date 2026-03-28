@@ -1,17 +1,18 @@
 "use strict";
 
-const { chromium }  = require("playwright");
-const config        = require("../config");
-const { setStatus } = require("../jobs/jobStore");
-const { login }     = require("./steps/login");
-const { enterData } = require("./steps/dataEntry");
+const { chromium }       = require("playwright");
+const config             = require("../config");
+const { setStatus }      = require("../jobs/jobStore");
+const { login }          = require("./steps/login");
+const { acceptTerms }    = require("./steps/termsAndConditions");
 
 /**
- * Run the full automation flow in the background.
- * Called without await so the HTTP response is returned immediately.
+ * Run the automation flow in the background.
+ * Current flow: Login → Accept T&C → Done
+ * (Data entry steps will be added in the next phase)
  *
- * @param {string}   jobId - Job ID from jobStore
- * @param {object[]} rows  - Parsed Excel rows
+ * @param {string}   jobId
+ * @param {object}   rows  - { flight: {}, pax: [] }
  */
 async function runAutomation(jobId, rows) {
   let browser;
@@ -20,15 +21,17 @@ async function runAutomation(jobId, rows) {
     browser = await chromium.launch({ headless: config.HEADLESS });
     const page = await browser.newPage();
 
-    setStatus(jobId, "running", "מתחבר לאתר...");
+    // ── Step 1: Login ──────────────────────────────────────────
+    setStatus(jobId, "running", "מתחבר לאתר eAPIS...");
     await login(page, config);
 
-    setStatus(jobId, "running", `מתחיל הזנת נתונים (0 מתוך ${rows.length})...`);
-    await enterData(page, rows, (current) => {
-      setStatus(jobId, "running", `מעבד שורה ${current} מתוך ${rows.length}...`);
-    });
+    // ── Step 2: Accept Terms & Conditions ──────────────────────
+    setStatus(jobId, "running", "מאשר תנאי שימוש...");
+    await acceptTerms(page);
 
-    setStatus(jobId, "done", "הושלם בהצלחה!");
+    // ── Done ───────────────────────────────────────────────────
+    setStatus(jobId, "done", "התחברות הושלמה בהצלחה — ממתין להמשך פיתוח");
+
   } catch (err) {
     setStatus(jobId, "error", `שגיאה: ${err.message}`);
   } finally {
