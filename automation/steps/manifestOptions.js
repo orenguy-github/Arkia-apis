@@ -9,7 +9,7 @@
  */
 async function selectInboundFlight(page) {
   const inboundLink     = page.getByRole("link", { name: "Inbound Flight" });
-  const savedManifest   = page.locator("h1, h2, strong").filter({ hasText: /saved manifest/i });
+  const savedManifest   = page.locator("h1, h2, strong").filter({ hasText: /saved manifest/i }).first();
 
   // Wait for whichever element appears first (30s total timeout)
   await Promise.race([
