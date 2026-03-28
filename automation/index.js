@@ -1,15 +1,16 @@
 "use strict";
 
-const { chromium }       = require("playwright");
-const config             = require("../config");
-const { setStatus }      = require("../jobs/jobStore");
-const { login }          = require("./steps/login");
-const { acceptTerms }    = require("./steps/termsAndConditions");
+const { chromium }              = require("playwright");
+const config                    = require("../config");
+const { setStatus }             = require("../jobs/jobStore");
+const { login }                 = require("./steps/login");
+const { acceptTerms }           = require("./steps/termsAndConditions");
+const { selectInboundFlight }   = require("./steps/manifestOptions");
+const { enterFlightInfo }       = require("./steps/flightInfo");
 
 /**
  * Run the automation flow in the background.
- * Current flow: Login → Accept T&C → Done
- * (Data entry steps will be added in the next phase)
+ * Flow: Login → Accept T&C → Select Inbound Flight → Fill Flight Info → Next
  *
  * @param {string}   jobId
  * @param {object}   rows  - { flight: {}, pax: [] }
@@ -29,8 +30,16 @@ async function runAutomation(jobId, rows) {
     setStatus(jobId, "running", "מאשר תנאי שימוש...");
     await acceptTerms(page);
 
+    // ── Step 3: Select Inbound Flight ──────────────────────────
+    setStatus(jobId, "running", "בוחר טיסה נכנסת...");
+    await selectInboundFlight(page);
+
+    // ── Step 4: Fill Flight Information ────────────────────────
+    setStatus(jobId, "running", "ממלא פרטי טיסה...");
+    await enterFlightInfo(page, rows.flight);
+
     // ── Done ───────────────────────────────────────────────────
-    setStatus(jobId, "done", "התחברות הושלמה בהצלחה — ממתין להמשך פיתוח");
+    setStatus(jobId, "done", "פרטי הטיסה הוזנו בהצלחה — ממתין להמשך");
 
   } catch (err) {
     setStatus(jobId, "error", `שגיאה: ${err.message}`);
