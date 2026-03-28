@@ -1,25 +1,17 @@
 "use strict";
 
 /**
- * Step: Fill Passenger Information form (up to 5 passengers per page load)
- * and click "Review Manifest".
+ * Step: Fill Passenger Information form (up to 5 passengers per page load).
  *
- * eAPIS page after crew info: submitCrewInfo.do
+ * eAPIS passenger form uses a table layout with adjacent <td> labels.
+ * Selectors use multiple strategies with fallbacks for robustness.
  *
- * Each passenger block has these fields (nth(i) within the named group):
- *   Last Name, First Name, Country of Residence, Citizenship,
- *   Street Address, City, State, ZIP               → textbox, nth(i)
- *   Sex                                             → combobox, nth(i)  ("M" / "F")
- *   Document Type                                   → combobox, nth(i)  (always "Passport")
- *   Document Number, Country of Issuance            → textbox, nth(i*2)  (two doc slots; use slot 0)
+ * Date fields: each passenger block has 2 date rows — DOB (even) and Expiration (odd).
+ * For 5 passengers: 10 MM fields, indexed 0-9 (passenger i: DOB=i*2, Exp=i*2+1).
  *
- *   Date fields — per block there are 2 date rows (DOB then Expiration):
- *     Date of Birth MM/DD/YYYY  → nth(i*2),   nth(i*2),   nth(i*2)
- *     Expiration Date MM/DD/YYYY → nth(i*2+1), nth(i*2+1), nth(i*2+1)
- *
- * @param {object}  page     - Playwright page
- * @param {Array}   paxRows  - Array of passenger objects (max 5)
- * @param {boolean} isLast   - true → click "Review Manifest"; false → leave for "Add Passengers"
+ * @param {object}  page    - Playwright page
+ * @param {Array}   paxRows - Array of passenger objects (max 5)
+ * @param {boolean} isLast  - true → click "Review Manifest"; false → caller clicks "Add Passengers"
  */
 async function enterPassengerInfo(page, paxRows, isLast) {
   await page.waitForLoadState("domcontentloaded");
@@ -32,65 +24,97 @@ async function enterPassengerInfo(page, paxRows, isLast) {
     return { mm, dd, yyyy };
   }
 
-  function get(pax, col) {
+  function val(pax, col) {
     return String(pax[col] ?? "").trim();
+  }
+
+  /**
+   * Fill a textbox using multiple selector strategies in order:
+   * 1. getByRole textbox with name regex
+   * 2. getByLabel with name regex
+   * Falls through to the first match found.
+   */
+  async function fillText(nameRe, index, value) {
+    const byRole = page.getByRole("textbox", { name: nameRe });
+    if (await byRole.count() > index) {
+      await byRole.nth(index).fill(value);
+      return;
+    }
+    const byLabel = page.getByLabel(nameRe);
+    if (await byLabel.count() > index) {
+      await byLabel.nth(index).fill(value);
+      return;
+    }
+    throw new Error(`Could not locate field "${nameRe}" at index ${index}`);
+  }
+
+  /**
+   * Select combobox by name regex with fallback to getByLabel.
+   */
+  async function fillSelect(nameRe, index, value) {
+    const byRole = page.getByRole("combobox", { name: nameRe });
+    if (await byRole.count() > index) {
+      await byRole.nth(index).selectOption(value);
+      return;
+    }
+    const byLabel = page.getByLabel(nameRe);
+    if (await byLabel.count() > index) {
+      await byLabel.nth(index).selectOption(value);
+      return;
+    }
+    throw new Error(`Could not locate combobox "${nameRe}" at index ${index}`);
   }
 
   for (let i = 0; i < batch.length; i++) {
     const pax = batch[i];
 
-    const dob = splitDate(get(pax, "Date of Birth"));
-    const exp = splitDate(get(pax, "Expiration Date"));
+    const dob = splitDate(val(pax, "Date of Birth"));
+    const exp = splitDate(val(pax, "Expiration Date"));
 
-    // ── Text fields (one per passenger, simple nth) ────────────────
-    await page.getByRole("textbox", { name: /last name/i }).nth(i)
-      .fill(get(pax, "Last Name"));
-
-    await page.getByRole("textbox", { name: /first name/i }).nth(i)
-      .fill(get(pax, "First Name"));
-
-    await page.getByRole("textbox", { name: /country of residence/i }).nth(i)
-      .fill(get(pax, "Country of Residence"));
-
-    await page.getByRole("textbox", { name: /citizenship/i }).nth(i)
-      .fill(get(pax, "Citizenship"));
-
-    await page.getByRole("textbox", { name: /street address/i }).nth(i)
-      .fill(get(pax, "Street Address"));
-
-    await page.getByRole("textbox", { name: /^city/i }).nth(i)
-      .fill(get(pax, "City"));
-
-    await page.getByRole("textbox", { name: /^state/i }).nth(i)
-      .fill(get(pax, "State"));
-
-    await page.getByRole("textbox", { name: /zip/i }).nth(i)
-      .fill(get(pax, "ZIP"));
+    // ── Name ───────────────────────────────────────────────────────
+    await fillText(/last name/i,  i, val(pax, "Last Name"));
+    await fillText(/first name/i, i, val(pax, "First Name"));
 
     // ── Sex combobox ───────────────────────────────────────────────
-    await page.getByRole("combobox", { name: /sex/i }).nth(i)
-      .selectOption(get(pax, "Sex"));
+    await fillSelect(/sex/i, i, val(pax, "Sex"));
 
-    // ── Document Type combobox (always Passport) ───────────────────
-    await page.getByRole("combobox", { name: /document type/i }).nth(i)
-      .selectOption("Passport");
+    // ── Date of Birth (DOB = even index, Exp = odd index) ──────────
+    await fillText(/^MM$/i, i * 2,     dob.mm);
+    await fillText(/^DD$/i, i * 2,     dob.dd);
+    await fillText(/^YYYY$/i, i * 2,   dob.yyyy);
 
-    // ── Document Number and Country of Issuance (2 doc slots per pax) ─
-    await page.getByRole("textbox", { name: /document number/i }).nth(i * 2)
-      .fill(get(pax, "Document Number"));
+    // ── Country of Residence ───────────────────────────────────────
+    await fillText(/country of residence/i, i, val(pax, "Country of Residence"));
 
-    await page.getByRole("textbox", { name: /country of issuance/i }).nth(i * 2)
-      .fill(get(pax, "Country of Issuance"));
+    // ── Citizenship — eAPIS may label it "Country of Citizenship" ──
+    await fillText(/citi?zen/i, i, val(pax, "Citizenship"));
 
-    // ── Date of Birth (2 date rows per passenger: DOB=even, Exp=odd) ──
-    await page.getByRole("textbox", { name: /^MM$/i }).nth(i * 2).fill(dob.mm);
-    await page.getByRole("textbox", { name: /^DD$/i }).nth(i * 2).fill(dob.dd);
-    await page.getByRole("textbox", { name: /^YYYY$/i }).nth(i * 2).fill(dob.yyyy);
+    // ── Address ────────────────────────────────────────────────────
+    await fillText(/street address/i, i, val(pax, "Street Address"));
+    await fillText(/^city/i,          i, val(pax, "City"));
+    await fillText(/^state/i,         i, val(pax, "State"));
+    await fillText(/zip/i,            i, val(pax, "ZIP"));
+
+    // ── Document ───────────────────────────────────────────────────
+    await fillText(/document number/i, i * 2, val(pax, "Document Number"));
+
+    // Document Type: try option value "P" first, then visible text "Passport"
+    const docTypeRole  = page.getByRole("combobox", { name: /document type/i });
+    const docTypeLabel = page.getByLabel(/document type/i);
+    const docTypeLoc   = (await docTypeRole.count() > i)  ? docTypeRole.nth(i)
+                       : (await docTypeLabel.count() > i) ? docTypeLabel.nth(i)
+                       : null;
+    if (!docTypeLoc) throw new Error(`Could not locate Document Type combobox at index ${i}`);
+    await docTypeLoc.selectOption("P").catch(async () => {
+      await docTypeLoc.selectOption("Passport");
+    });
+
+    await fillText(/country of issuance/i, i * 2, val(pax, "Country of Issuance"));
 
     // ── Expiration Date ────────────────────────────────────────────
-    await page.getByRole("textbox", { name: /^MM$/i }).nth(i * 2 + 1).fill(exp.mm);
-    await page.getByRole("textbox", { name: /^DD$/i }).nth(i * 2 + 1).fill(exp.dd);
-    await page.getByRole("textbox", { name: /^YYYY$/i }).nth(i * 2 + 1).fill(exp.yyyy);
+    await fillText(/^MM$/i,   i * 2 + 1, exp.mm);
+    await fillText(/^DD$/i,   i * 2 + 1, exp.dd);
+    await fillText(/^YYYY$/i, i * 2 + 1, exp.yyyy);
   }
 
   // ── Review Manifest (only on the last chunk) ──────────────────────
@@ -99,7 +123,25 @@ async function enterPassengerInfo(page, paxRows, isLast) {
       page.waitForNavigation({ waitUntil: "domcontentloaded" }).catch(() => {}),
       page.getByRole("button", { name: "Review Manifest" }).click(),
     ]);
+    await assertNoPageErrors(page);
   }
 }
 
-module.exports = { enterPassengerInfo };
+/**
+ * Scan the current page for eAPIS validation errors (lines beginning with "ERROR:").
+ * Throws a descriptive Error if any are found so the job reports them to the user.
+ */
+async function assertNoPageErrors(page) {
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  const errors = bodyText
+    .split("\n")
+    .map(l => l.trim())
+    .filter(l => /^ERROR:/i.test(l))
+    .map(l => l.replace(/^ERROR:\s*/i, ""));
+
+  if (errors.length > 0) {
+    throw new Error("שגיאות בטופס eAPIS:\n" + errors.join("\n"));
+  }
+}
+
+module.exports = { enterPassengerInfo, assertNoPageErrors };

@@ -9,7 +9,7 @@ const { acceptTerms }           = require("./steps/termsAndConditions");
 const { selectInboundFlight }   = require("./steps/manifestOptions");
 const { enterFlightInfo }       = require("./steps/flightInfo");
 const { submitCrewInfo }        = require("./steps/crewInfo");
-const { enterPassengerInfo }    = require("./steps/passengerInfo");
+const { enterPassengerInfo, assertNoPageErrors } = require("./steps/passengerInfo");
 
 /**
  * Run the automation flow in the background.
@@ -79,6 +79,8 @@ async function runAutomation(jobId, rows) {
           page.waitForNavigation({ waitUntil: "domcontentloaded" }).catch(() => {}),
           page.getByRole("button", { name: "Add Passengers" }).click(),
         ]);
+        // If eAPIS rejected the form (validation errors), stop and report them
+        await assertNoPageErrors(page);
       } else {
         // Last chunk — fill and click "Review Manifest"
         await enterPassengerInfo(page, chunk, true);
