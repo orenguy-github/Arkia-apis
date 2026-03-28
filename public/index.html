@@ -176,9 +176,21 @@
           <div class="done-glyph" id="doneGlyph"></div>
           <h1 id="doneTitle"></h1>
           <p class="done-sub" id="doneDetail"></p>
+          <button class="btn-primary" id="continueBtn" style="display:none"></button>
           <button class="btn-ghost" id="startOverBtn">טעינה נוספת</button>
         </div>
       </section>
+
+      <!-- ── Continuation Modal ───────────────────────────────── -->
+      <div id="contModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+        <div class="modal-box">
+          <p class="modal-q">האם ביצעת Submit לטופס הקודם באתר eAPIS?</p>
+          <div class="modal-actions">
+            <button class="btn-primary" id="contConfirmBtn">אשר — המשך תהליך</button>
+            <button class="btn-ghost"   id="contCancelBtn">בטל — חזרה לתחילה</button>
+          </div>
+        </div>
+      </div>
 
     </div><!-- /panel -->
 

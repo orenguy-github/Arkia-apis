@@ -3,6 +3,7 @@
 const { chromium }              = require("playwright");
 const config                    = require("../config");
 const { setStatus }             = require("../jobs/jobStore");
+const { storeContinuation }     = require("../jobs/continuationStore");
 const { login }                 = require("./steps/login");
 const { acceptTerms }           = require("./steps/termsAndConditions");
 const { selectInboundFlight }   = require("./steps/manifestOptions");
@@ -36,10 +37,22 @@ async function runAutomation(jobId, rows) {
 
     // ── Step 4: Fill Flight Information ────────────────────────
     setStatus(jobId, "running", "ממלא פרטי טיסה...");
-    await enterFlightInfo(page, rows.flight);
+    const totalPax   = rows._paxOverride !== undefined
+      ? rows._paxOverride
+      : Number(rows.flight["Passengers"] || 0);
+    const batchPax   = Math.min(totalPax, 50);
+    const remaining  = totalPax - batchPax;
+    await enterFlightInfo(page, rows.flight, batchPax);
 
     // ── Done ───────────────────────────────────────────────────
-    setStatus(jobId, "done", "פרטי הטיסה הוזנו בהצלחה — ממתין להמשך");
+    if (remaining > 0) {
+      const contToken = storeContinuation(rows, remaining);
+      setStatus(jobId, "done",
+        `הוזנו ${batchPax} מתוך ${totalPax} נוסעים — נותרו ${remaining}`,
+        { remainingPax: remaining, contToken });
+    } else {
+      setStatus(jobId, "done", "פרטי הטיסה הוזנו בהצלחה");
+    }
 
   } catch (err) {
     setStatus(jobId, "error", `שגיאה: ${err.message}`);

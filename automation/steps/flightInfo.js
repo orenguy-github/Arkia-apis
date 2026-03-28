@@ -16,7 +16,7 @@
  *   Passengers           → textbox /^passengers/i
  *   In-transit Passengers→ textbox /in-transit/i
  */
-async function enterFlightInfo(page, flight) {
+async function enterFlightInfo(page, flight, paxCount) {
   await page.waitForSelector('input[type="text"]');
 
   function splitDate(str) {
@@ -67,9 +67,8 @@ async function enterFlightInfo(page, flight) {
   await page.getByRole("textbox", { name: /crew/i })
     .fill(String(flight["Crew"] || "0"));
 
-  const paxValue = Math.min(Number(flight["Passengers"] || 0), 50);
   await page.getByRole("textbox", { name: /^passengers/i })
-    .fill(String(paxValue));
+    .fill(String(paxCount));
 
   await page.getByRole("textbox", { name: /in-transit/i })
     .fill(String(flight["In-transit Passengers"] || "0"));

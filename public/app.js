@@ -1,7 +1,8 @@
 // ── State ─────────────────────────────────────────────────────────────────────
-let sessionToken = null;
+let sessionToken  = null;
 let selectedFile  = null;
 let activeTab     = "Flight"; // for error screen tabs
+let pendingContToken = null;  // continuation token when remainingPax > 0
 
 // ── Elements ──────────────────────────────────────────────────────────────────
 const uploadZone       = document.getElementById("uploadZone");
@@ -27,7 +28,12 @@ const doneGlyph    = document.getElementById("doneGlyph");
 const doneRing     = document.getElementById("doneRing");
 const doneTitle    = document.getElementById("doneTitle");
 const doneDetail   = document.getElementById("doneDetail");
+const continueBtn  = document.getElementById("continueBtn");
 const startOverBtn = document.getElementById("startOverBtn");
+
+const contModal       = document.getElementById("contModal");
+const contConfirmBtn  = document.getElementById("contConfirmBtn");
+const contCancelBtn   = document.getElementById("contCancelBtn");
 const footerClock  = document.getElementById("footerClock");
 
 // ── Clock ──────────────────────────────────────────────────────────────────────
@@ -287,6 +293,13 @@ async function pollJob(jobId) {
       doneGlyph.textContent = "✅";
       doneTitle.textContent = "הושלם בהצלחה!";
       doneRing.className    = "done-ring success";
+      if (data.remainingPax > 0 && data.contToken) {
+        pendingContToken = data.contToken;
+        continueBtn.textContent = `המשך תהליך — נותרו ${data.remainingPax} נוסעים`;
+        continueBtn.style.display = "";
+      } else {
+        continueBtn.style.display = "none";
+      }
     } else if (data.status === "error") {
       doneGlyph.textContent = "❌";
       doneTitle.textContent = "שגיאה";
@@ -318,4 +331,44 @@ function showDone(success, title, detail) {
 startOverBtn.addEventListener("click", () => {
   resetState();
   showScreen("upload");
+});
+
+// ── Continuation flow ──────────────────────────────────────────────────────────
+continueBtn.addEventListener("click", () => {
+  contModal.style.display = "";
+});
+
+contCancelBtn.addEventListener("click", () => {
+  contModal.style.display = "none";
+  pendingContToken = null;
+  continueBtn.style.display = "none";
+  resetState();
+  showScreen("upload");
+});
+
+contConfirmBtn.addEventListener("click", async () => {
+  const token = pendingContToken;
+  pendingContToken = null;
+  contModal.style.display = "none";
+  continueBtn.style.display = "none";
+
+  // Start new job for remaining passengers
+  try {
+    const res  = await fetch("/api/continue", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ contToken: token }),
+    });
+    const data = await res.json();
+    if (!data.success) { alert(data.message); return; }
+
+    doneRing.className     = "done-ring";
+    doneGlyph.textContent  = "⏳";
+    doneTitle.textContent  = "מעבד...";
+    doneDetail.textContent = "מתחבר לאתר eAPIS";
+    showScreen("done");
+    pollJob(data.jobId);
+  } catch (err) {
+    alert(`שגיאת תקשורת: ${err.message}`);
+  }
 });

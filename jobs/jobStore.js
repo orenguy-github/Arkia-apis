@@ -13,9 +13,9 @@ function createJob() {
   return jobId;
 }
 
-function setStatus(jobId, status, detail = "") {
+function setStatus(jobId, status, detail = "", extra = {}) {
   if (!jobs.has(jobId)) return;
-  jobs.set(jobId, { status, detail });
+  jobs.set(jobId, { status, detail, ...extra });
 }
 
 function getJob(jobId) {

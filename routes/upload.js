@@ -7,9 +7,10 @@ const fs                 = require("fs");
 const config             = require("../config");
 const validate           = require("../validation");
 const db                 = require("../db/database");
-const { createJob, getJob } = require("../jobs/jobStore");
-const { enqueue }        = require("../jobs/jobQueue");
-const { runAutomation }  = require("../automation");
+const { createJob, getJob }                          = require("../jobs/jobStore");
+const { enqueue }                                    = require("../jobs/jobQueue");
+const { runAutomation }                              = require("../automation");
+const { getContinuation, deleteContinuation }        = require("../jobs/continuationStore");
 
 const router = express.Router();
 
@@ -133,6 +134,23 @@ router.post("/confirm", (req, res) => {
   enqueue(jobId, rows, runAutomation);
 
   return res.json({ success: true, status: "confirmed", jobId });
+});
+
+// ── POST /api/continue ────────────────────────────────────────────────────────
+
+router.post("/continue", (req, res) => {
+  const { contToken } = req.body;
+  const cont = getContinuation(contToken);
+  if (!cont) {
+    return res.status(400).json({ success: false, message: "פג תוקף — יש להתחיל מחדש" });
+  }
+  deleteContinuation(contToken);
+
+  const jobId = createJob();
+  const rows  = { ...cont.rows, _paxOverride: cont.remainingPax };
+  enqueue(jobId, rows, runAutomation);
+
+  return res.json({ success: true, jobId });
 });
 
 // ── GET /api/status/:jobId ────────────────────────────────────────────────────
