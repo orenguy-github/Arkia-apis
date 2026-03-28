@@ -542,6 +542,15 @@ section.active { display: block; }
   margin-bottom: 6px;
 }
 
+.done-actions {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 4px;
+}
+
 /* ── Error screen ───────────────────────────────────────────────── */
 .err-tag { color: var(--error) !important; }
 
@@ -736,8 +745,10 @@ section.active { display: block; }
 
 .modal-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row-reverse;
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* ── Footer ─────────────────────────────────────────────────────── */

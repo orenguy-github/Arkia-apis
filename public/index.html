@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="app.css?v=3" />
+  <link rel="stylesheet" href="app.css?v=4" />
 </head>
 <body>
 
@@ -176,8 +176,10 @@
           <div class="done-glyph" id="doneGlyph"></div>
           <h1 id="doneTitle"></h1>
           <p class="done-sub" id="doneDetail"></p>
-          <button class="btn-primary" id="continueBtn" style="display:none"></button>
-          <button class="btn-ghost" id="startOverBtn">טעינה נוספת</button>
+          <div class="done-actions">
+            <button class="btn-ghost" id="continueBtn" style="display:none"></button>
+            <button class="btn-ghost" id="startOverBtn">טעינה נוספת</button>
+          </div>
         </div>
       </section>
 
@@ -186,8 +188,8 @@
         <div class="modal-box">
           <p class="modal-q">האם ביצעת Submit לטופס הקודם באתר eAPIS?</p>
           <div class="modal-actions">
-            <button class="btn-primary" id="contConfirmBtn">אשר — המשך תהליך</button>
-            <button class="btn-ghost"   id="contCancelBtn">בטל — חזרה לתחילה</button>
+            <button class="btn-ghost" id="contConfirmBtn">אשר — המשך תהליך</button>
+            <button class="btn-ghost" id="contCancelBtn">בטל — חזרה לתחילה</button>
           </div>
         </div>
       </div>
@@ -205,6 +207,6 @@
 
   </div><!-- /wrapper -->
 
-  <script src="app.js?v=3" type="module"></script>
+  <script src="app.js?v=4" type="module"></script>
 </body>
 </html>
