@@ -2,7 +2,8 @@
 
 const { chromium }              = require("playwright");
 const config                    = require("../config");
-const { setStatus }             = require("../jobs/jobStore");
+const db                        = require("../db/database");
+const { setStatus, getJob }     = require("../jobs/jobStore");
 const { storeContinuation }     = require("../jobs/continuationStore");
 const { login }                 = require("./steps/login");
 const { acceptTerms }           = require("./steps/termsAndConditions");
@@ -20,6 +21,7 @@ const { enterPassengerInfo, assertNoPageErrors } = require("./steps/passengerInf
  */
 async function runAutomation(jobId, rows) {
   let browser;
+  const { uploadId } = getJob(jobId) || {};
   try {
     setStatus(jobId, "running", "מאתחל דפדפן...");
     browser = await chromium.launch({
@@ -90,15 +92,18 @@ async function runAutomation(jobId, rows) {
 
     // ── Done ───────────────────────────────────────────────────
     if (remaining > 0) {
-      const contToken = storeContinuation(rows, remaining, paxOffset + batchPax);
+      const contToken = storeContinuation(rows, remaining, paxOffset + batchPax, uploadId);
+      if (uploadId) db.updateStatus(uploadId, "partial");
       setStatus(jobId, "done",
         `הוזנו ${batchPax} מתוך ${totalPax} נוסעים — נותרו ${remaining}`,
         { remainingPax: remaining, contToken });
     } else {
+      if (uploadId) db.updateStatus(uploadId, "done");
       setStatus(jobId, "done", "פרטי הנוסעים הוזנו בהצלחה — ניתן לבצע Submit באתר eAPIS");
     }
 
   } catch (err) {
+    if (uploadId) db.updateStatus(uploadId, "error");
     setStatus(jobId, "error", `שגיאה: ${err.message}`);
   } finally {
     if (browser) await browser.close().catch(() => {});

@@ -130,7 +130,7 @@ router.post("/confirm", (req, res) => {
 
   // Confirmed — enqueue automation (runs serially, one at a time)
   db.updateStatus(uploadId, "confirmed");
-  const jobId = createJob();
+  const jobId = createJob(uploadId);
   enqueue(jobId, rows, runAutomation);
 
   return res.json({ success: true, status: "confirmed", jobId });
@@ -146,7 +146,7 @@ router.post("/continue", (req, res) => {
   }
   deleteContinuation(contToken);
 
-  const jobId = createJob();
+  const jobId = createJob(cont.uploadId || null);
   const rows  = { ...cont.rows, _paxOverride: cont.remainingPax, _paxOffset: cont.paxOffset || 0 };
   enqueue(jobId, rows, runAutomation);
 
@@ -158,7 +158,8 @@ router.post("/continue", (req, res) => {
 router.get("/status/:jobId", (req, res) => {
   const job = getJob(req.params.jobId);
   if (!job) return res.status(404).json({ success: false, message: "עבודה לא נמצאה" });
-  return res.json({ success: true, ...job });
+  const { uploadId, ...jobData } = job;
+  return res.json({ success: true, ...jobData });
 });
 
 // ── GET /api/uploads ──────────────────────────────────────────────────────────

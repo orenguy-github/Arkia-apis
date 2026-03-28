@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="app.css?v=4" />
+  <link rel="stylesheet" href="app.css?v=5" />
 </head>
 <body>
 
@@ -28,9 +28,16 @@
         <span class="logo-plane" aria-hidden="true">✈</span>
         <span class="logo-text">ARKIA</span>
       </div>
-      <div class="sys-badge">
-        <span class="sys-dot"></span>
-        <span>מערכת APIS</span>
+      <div class="header-right" id="headerRight">
+        <div class="sys-badge" id="sysBadge">
+          <span class="sys-dot"></span>
+          <span>מערכת APIS</span>
+        </div>
+        <div class="header-user" id="headerUser" style="display:none">
+          <button class="header-icon-btn" id="adminBtn" style="display:none" title="Dashboard">☰</button>
+          <span class="user-chip" id="headerUsername"></span>
+          <button class="header-icon-btn" id="logoutBtn" title="יציאה">↩</button>
+        </div>
       </div>
     </header>
 
@@ -45,8 +52,31 @@
         </span>
       </div>
 
+      <!-- ── Screen 0 : Login ──────────────────────────────────────────────────── -->
+      <section id="screen-login" class="active">
+        <div class="screen-meta">
+          <span class="step-tag">ACCESS</span>
+          <h1>כניסה למערכת</h1>
+          <p class="step-sub">ARKIA APIS PORTAL · AUTHENTICATED ACCESS ONLY</p>
+        </div>
+        <div class="login-form">
+          <div class="field-group">
+            <label class="field-label" for="loginUsername">שם משתמש</label>
+            <input type="text" id="loginUsername" class="field-input" autocomplete="username" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="loginPassword">סיסמה</label>
+            <input type="password" id="loginPassword" class="field-input" autocomplete="current-password" />
+          </div>
+          <div class="login-error" id="loginError"></div>
+          <button class="btn-upload" id="loginBtn">
+            <span>כניסה</span><span class="arr" aria-hidden="true">←</span>
+          </button>
+        </div>
+      </section>
+
       <!-- ── Screen 1 : Upload ──────────────────────────────── -->
-      <section id="screen-upload" class="active">
+      <section id="screen-upload">
 
         <div class="screen-meta">
           <span class="step-tag">STEP 01</span>
@@ -196,6 +226,61 @@
 
     </div><!-- /panel -->
 
+    <!-- ── Admin Dashboard (outside panel, full width) ────────── -->
+    <div id="adminDashboard" class="admin-dashboard" style="display:none">
+      <div class="admin-header">
+        <div>
+          <span class="step-tag">ADMIN</span>
+          <h1 class="admin-title">לוח בקרה</h1>
+        </div>
+        <button class="btn-ghost" id="backToUploadBtn">← חזרה להעלאה</button>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-section-title">היסטוריית הרצות</div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>שם קובץ</th>
+                <th>זמן טעינה</th>
+                <th>נוסעים</th>
+                <th>סטטוס</th>
+              </tr>
+            </thead>
+            <tbody id="runsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-section-title">ניהול משתמשים</div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>שם משתמש</th>
+                <th>תפקיד</th>
+                <th>תאריך יצירה</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+        </div>
+        <div class="add-user-row" id="addUserRow">
+          <input type="text"     id="newUsername" class="field-input-sm" placeholder="שם משתמש" />
+          <input type="password" id="newPassword" class="field-input-sm" placeholder="סיסמה" />
+          <select id="newRole" class="field-select-sm">
+            <option value="user">משתמש</option>
+            <option value="admin">מנהל</option>
+          </select>
+          <button class="btn-confirm-sm" id="addUserBtn">הוסף</button>
+        </div>
+        <div class="admin-error" id="addUserError"></div>
+      </div>
+    </div>
+
     <!-- ── Footer ──────────────────────────────────────────── -->
     <footer class="site-footer">
       <span>ARKIA AIRLINES</span>
@@ -207,6 +292,6 @@
 
   </div><!-- /wrapper -->
 
-  <script src="app.js?v=4" type="module"></script>
+  <script src="app.js?v=5" type="module"></script>
 </body>
 </html>

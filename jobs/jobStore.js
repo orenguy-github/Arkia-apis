@@ -7,9 +7,9 @@
 
 const jobs = new Map();
 
-function createJob() {
+function createJob(uploadId) {
   const jobId = crypto.randomUUID();
-  jobs.set(jobId, { status: "pending", detail: "ממתין לתחילת עיבוד..." });
+  jobs.set(jobId, { status: "pending", detail: "ממתין לתחילת עיבוד...", uploadId: uploadId || null });
   return jobId;
 }
 

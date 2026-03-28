@@ -21,7 +21,13 @@ try {
   // .env not found — rely on real environment variables
 }
 
+const session     = require("express-session");
+const bcrypt      = require("bcryptjs");
+const { requireAuth, requireAdmin } = require("./middleware/auth");
+const authRoutes  = require("./routes/auth");
+const adminRoutes = require("./routes/admin");
 const uploadRoutes = require("./routes/upload");
+const db          = require("./db/database");
 
 const PUBLIC_DIR = path.join(__dirname, "public");
 
@@ -29,12 +35,28 @@ const app = express();
 app.use(express.json());
 app.use(express.static(PUBLIC_DIR));
 
-app.use("/api", uploadRoutes);
+app.use(session({
+  secret:            config.SESSION_SECRET,
+  resave:            false,
+  saveUninitialized: false,
+  cookie:            { maxAge: 8 * 60 * 60 * 1000 }, // 8 hours
+}));
+
+app.use("/api/auth", authRoutes);
+app.use("/api/admin", requireAuth, requireAdmin, adminRoutes);
+app.use("/api", requireAuth, uploadRoutes);
 
 // Fallback: serve index.html for any non-API route
 app.use((req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
+
+// Seed the default admin user at startup
+const defaultHash = bcrypt.hashSync(config.ADMIN_PASSWORD, 10);
+db.seedAdminUser(config.ADMIN_USER, defaultHash);
+if (config.ADMIN_PASSWORD === "Arkia2024!") {
+  console.warn("⚠️  Using default admin password — change ADMIN_PASSWORD env var in production!");
+}
 
 app.listen(config.PORT, () => {
   console.log(`שרת פועל: http://localhost:${config.PORT}`);

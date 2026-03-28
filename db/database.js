@@ -25,6 +25,16 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT    UNIQUE NOT NULL,
+    password_hash TEXT    NOT NULL,
+    role          TEXT    NOT NULL DEFAULT 'user',
+    created_at    DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+  )
+`);
+
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 const stmtInsert = db.prepare(`
@@ -70,4 +80,58 @@ function getUploadById(id) {
   return stmtGetById.get(id) || null;
 }
 
-module.exports = { logUpload, updateStatus, getAllUploads, getUploadById };
+// ── User Queries ──────────────────────────────────────────────────────────────
+
+const stmtInsertUser = db.prepare(`
+  INSERT INTO users (username, password_hash, role)
+  VALUES (@username, @password_hash, @role)
+`);
+
+const stmtGetUserByUsername = db.prepare(`
+  SELECT * FROM users WHERE username = ?
+`);
+
+const stmtGetUserById = db.prepare(`
+  SELECT * FROM users WHERE id = ?
+`);
+
+const stmtGetAllUsers = db.prepare(`
+  SELECT id, username, role, created_at FROM users
+`);
+
+const stmtDeleteUser = db.prepare(`
+  DELETE FROM users WHERE id = ?
+`);
+
+const stmtCountUsers = db.prepare(`
+  SELECT COUNT(*) AS cnt FROM users
+`);
+
+function createUser(username, passwordHash, role) {
+  stmtInsertUser.run({ username, password_hash: passwordHash, role });
+}
+
+function getUserByUsername(username) {
+  return stmtGetUserByUsername.get(username);
+}
+
+function getUserById(id) {
+  return stmtGetUserById.get(id);
+}
+
+function getAllUsers() {
+  return stmtGetAllUsers.all();
+}
+
+function deleteUser(id) {
+  stmtDeleteUser.run(id);
+}
+
+function seedAdminUser(username, passwordHash) {
+  const { cnt } = stmtCountUsers.get();
+  if (cnt === 0) {
+    stmtInsertUser.run({ username, password_hash: passwordHash, role: "admin" });
+  }
+}
+
+module.exports = { logUpload, updateStatus, getAllUploads, getUploadById, createUser, getUserByUsername, getUserById, getAllUsers, deleteUser, seedAdminUser };

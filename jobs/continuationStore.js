@@ -7,9 +7,9 @@
 
 const store = new Map();
 
-function storeContinuation(rows, remainingPax, paxOffset) {
+function storeContinuation(rows, remainingPax, paxOffset, uploadId) {
   const token = crypto.randomUUID();
-  store.set(token, { rows, remainingPax, paxOffset });
+  store.set(token, { rows, remainingPax, paxOffset, uploadId: uploadId || null });
   setTimeout(() => store.delete(token), 2 * 60 * 60 * 1000);
   return token;
 }

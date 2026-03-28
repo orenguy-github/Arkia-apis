@@ -23,4 +23,8 @@ module.exports = {
 
   // Upload limits
   UPLOAD_SIZE_LIMIT_MB: 10,
+
+  SESSION_SECRET: process.env.SESSION_SECRET || "arkia-apis-dev-secret",
+  ADMIN_USER:     process.env.ADMIN_USER     || "admin",
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "Arkia2024!",
 };

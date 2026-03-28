@@ -3,6 +3,7 @@ let sessionToken  = null;
 let selectedFile  = null;
 let activeTab     = "Flight"; // for error screen tabs
 let pendingContToken = null;  // continuation token when remainingPax > 0
+let currentUser = null;
 
 // ── Elements ──────────────────────────────────────────────────────────────────
 const uploadZone       = document.getElementById("uploadZone");
@@ -36,6 +37,26 @@ const contConfirmBtn  = document.getElementById("contConfirmBtn");
 const contCancelBtn   = document.getElementById("contCancelBtn");
 const footerClock  = document.getElementById("footerClock");
 
+// Auth / admin elements
+const loginUsername   = document.getElementById("loginUsername");
+const loginPassword   = document.getElementById("loginPassword");
+const loginError      = document.getElementById("loginError");
+const loginBtn        = document.getElementById("loginBtn");
+const headerUser      = document.getElementById("headerUser");
+const sysBadge        = document.getElementById("sysBadge");
+const headerUsername  = document.getElementById("headerUsername");
+const adminBtn        = document.getElementById("adminBtn");
+const logoutBtn       = document.getElementById("logoutBtn");
+const adminDashboard  = document.getElementById("adminDashboard");
+const backToUploadBtn = document.getElementById("backToUploadBtn");
+const runsTbody       = document.getElementById("runsTbody");
+const usersTbody      = document.getElementById("usersTbody");
+const newUsername     = document.getElementById("newUsername");
+const newPassword     = document.getElementById("newPassword");
+const newRole         = document.getElementById("newRole");
+const addUserBtn      = document.getElementById("addUserBtn");
+const addUserError    = document.getElementById("addUserError");
+
 // ── Clock ──────────────────────────────────────────────────────────────────────
 function updateClock() {
   footerClock.textContent = new Date().toLocaleTimeString("he-IL", {
@@ -44,6 +65,31 @@ function updateClock() {
 }
 updateClock();
 setInterval(updateClock, 1000);
+
+// ── Auth init ──────────────────────────────────────────────────────────────────
+(async function init() {
+  try {
+    const res  = await fetch("/api/auth/me");
+    const data = await res.json();
+    if (data.success) {
+      onLogin(data.user);
+    } else {
+      showScreen("login");
+    }
+  } catch {
+    showScreen("login");
+  }
+})();
+
+function onLogin(user) {
+  currentUser = user;
+  // Update header
+  sysBadge.style.display = "none";
+  headerUser.style.display = "flex";
+  headerUsername.textContent = user.username;
+  if (user.role === "admin") adminBtn.style.display = "";
+  showScreen("upload");
+}
 
 // ── Screen routing ─────────────────────────────────────────────────────────────
 function showScreen(name) {
@@ -59,6 +105,8 @@ function resetState() {
   selectedFileName.classList.remove("visible");
   uploadBtn.disabled = true;
   uploadBtn.innerHTML = '<span>שלח לעיבוד</span><span class="arr" aria-hidden="true">←</span>';
+  loginUsername.value = "";
+  loginPassword.value = "";
 }
 
 // ── File selection ─────────────────────────────────────────────────────────────
@@ -372,3 +420,123 @@ contConfirmBtn.addEventListener("click", async () => {
     alert(`שגיאת תקשורת: ${err.message}`);
   }
 });
+
+// ── Login ──────────────────────────────────────────────────────────────────────
+loginBtn.addEventListener("click", async () => {
+  const username = loginUsername.value.trim();
+  const password = loginPassword.value;
+  loginError.textContent = "";
+  loginBtn.disabled = true;
+  loginBtn.innerHTML = "<span>מתחבר...</span>";
+  try {
+    const res  = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      loginError.textContent = data.message || "שגיאת כניסה";
+    } else {
+      onLogin(data.user);
+    }
+  } catch (err) {
+    loginError.textContent = `שגיאת תקשורת: ${err.message}`;
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.innerHTML = '<span>כניסה</span><span class="arr">←</span>';
+  }
+});
+// Enter key support
+loginPassword.addEventListener("keydown", e => { if (e.key === "Enter") loginBtn.click(); });
+loginUsername.addEventListener("keydown", e => { if (e.key === "Enter") loginPassword.focus(); });
+
+// ── Logout ─────────────────────────────────────────────────────────────────────
+logoutBtn.addEventListener("click", async () => {
+  await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+  currentUser = null;
+  sysBadge.style.display = "";
+  headerUser.style.display = "none";
+  adminBtn.style.display = "none";
+  resetState();
+  showScreen("login");
+});
+
+// ── Admin Dashboard ────────────────────────────────────────────────────────────
+adminBtn.addEventListener("click", async () => {
+  document.querySelector(".panel").style.display = "none";
+  adminDashboard.style.display = "block";
+  await refreshAdminDashboard();
+});
+
+backToUploadBtn.addEventListener("click", () => {
+  adminDashboard.style.display = "none";
+  document.querySelector(".panel").style.display = "block";
+  showScreen("upload");
+});
+
+async function refreshAdminDashboard() {
+  // Load runs
+  try {
+    const res  = await fetch("/api/admin/runs");
+    const data = await res.json();
+    runsTbody.innerHTML = (data.runs || []).map(r => {
+      const statusLabel = { uploaded: "הועלה", validation_failed: "שגיאת ולידציה", cancelled: "בוטל", confirmed: "בעיבוד", partial: "חלקי", done: "הושלם", error: "שגיאה" }[r.status] || r.status;
+      const statusClass = { done: "s-done", error: "s-error", partial: "s-partial", cancelled: "s-cancel", validation_failed: "s-error", confirmed: "s-running" }[r.status] || "s-default";
+      const dt = r.created_at ? new Date(r.created_at).toLocaleString("he-IL") : "—";
+      return `<tr>
+        <td class="td-file">${escHtml(r.original_name)}</td>
+        <td class="td-time">${dt}</td>
+        <td class="td-num">${r.row_count}</td>
+        <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+      </tr>`;
+    }).join("") || '<tr><td colspan="4" class="td-empty">אין הרצות</td></tr>';
+  } catch { runsTbody.innerHTML = '<tr><td colspan="4" class="td-empty">שגיאה בטעינה</td></tr>'; }
+
+  // Load users
+  try {
+    const res  = await fetch("/api/admin/users");
+    const data = await res.json();
+    usersTbody.innerHTML = (data.users || []).map(u => {
+      const isMe = u.id === currentUser?.id;
+      const dt = u.created_at ? new Date(u.created_at).toLocaleString("he-IL") : "—";
+      return `<tr>
+        <td>${escHtml(u.username)}</td>
+        <td>${u.role === "admin" ? "מנהל" : "משתמש"}</td>
+        <td class="td-time">${dt}</td>
+        <td>${isMe ? "" : `<button class="del-btn" data-id="${u.id}">מחק</button>`}</td>
+      </tr>`;
+    }).join("") || '<tr><td colspan="4" class="td-empty">אין משתמשים</td></tr>';
+    // Attach delete handlers
+    usersTbody.querySelectorAll(".del-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("למחוק משתמש זה?")) return;
+        const res = await fetch(`/api/admin/users/${btn.dataset.id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!data.success) { alert(data.message); return; }
+        await refreshAdminDashboard();
+      });
+    });
+  } catch { usersTbody.innerHTML = '<tr><td colspan="4" class="td-empty">שגיאה בטעינה</td></tr>'; }
+}
+
+addUserBtn.addEventListener("click", async () => {
+  addUserError.textContent = "";
+  const username = newUsername.value.trim();
+  const password = newPassword.value;
+  const role     = newRole.value;
+  if (!username || !password) { addUserError.textContent = "יש למלא שם משתמש וסיסמה"; return; }
+  const res  = await fetch("/api/admin/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password, role }),
+  });
+  const data = await res.json();
+  if (!data.success) { addUserError.textContent = data.message; return; }
+  newUsername.value = ""; newPassword.value = "";
+  await refreshAdminDashboard();
+});
+
+function escHtml(str) {
+  return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
