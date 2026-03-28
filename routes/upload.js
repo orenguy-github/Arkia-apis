@@ -8,6 +8,7 @@ const config             = require("../config");
 const validate           = require("../validation");
 const db                 = require("../db/database");
 const { createJob, getJob } = require("../jobs/jobStore");
+const { enqueue }        = require("../jobs/jobQueue");
 const { runAutomation }  = require("../automation");
 
 const router = express.Router();
@@ -126,10 +127,10 @@ router.post("/confirm", (req, res) => {
     return res.json({ success: true, status: "cancelled" });
   }
 
-  // Confirmed — start automation in background
+  // Confirmed — enqueue automation (runs serially, one at a time)
   db.updateStatus(uploadId, "confirmed");
   const jobId = createJob();
-  setImmediate(() => runAutomation(jobId, rows));
+  enqueue(jobId, rows, runAutomation);
 
   return res.json({ success: true, status: "confirmed", jobId });
 });

@@ -291,8 +291,14 @@ async function pollJob(jobId) {
       doneGlyph.textContent = "❌";
       doneTitle.textContent = "שגיאה";
       doneRing.className    = "done-ring error";
+    } else if (data.status === "queued") {
+      doneGlyph.textContent = "⏳";
+      doneTitle.textContent = "ממתין בתור...";
+      setTimeout(() => pollJob(jobId), 2000);
     } else {
-      // still running/pending — poll again in 2s
+      // running / pending — poll again in 2s
+      doneGlyph.textContent = "⏳";
+      doneTitle.textContent = "מעבד...";
       setTimeout(() => pollJob(jobId), 2000);
     }
   } catch {
