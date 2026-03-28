@@ -236,7 +236,7 @@ function renderWarnings(warnings) {
 
 // ── Confirm / Cancel ──────────────────────────────────────────────────────────
 cancelBtn.addEventListener("click", async () => {
-  if (sessionToken) await sendAction("cancel");
+  if (sessionToken) await sendAction("cancel").catch(() => {});
   resetState();
   showScreen("upload");
 });
@@ -245,15 +245,22 @@ confirmBtn.addEventListener("click", async () => {
   confirmBtn.disabled = true;
   confirmBtn.innerHTML = '<span>שולח...</span>';
 
-  const ok = await sendAction("confirm");
+  const result = await sendAction("confirm");
   confirmBtn.disabled = false;
   confirmBtn.innerHTML = '<span>אשר ושלח</span><span class="arr" aria-hidden="true">←</span>';
 
-  if (ok) showDone(true, "הטעינה אושרה!", "הנתונים נקלטו בהצלחה במערכת");
+  if (result && result.jobId) {
+    showScreen("done");
+    doneRing.className    = "done-ring";
+    doneGlyph.textContent = "⏳";
+    doneTitle.textContent = "מעבד...";
+    doneDetail.textContent = "מתחבר לאתר eAPIS";
+    pollJob(result.jobId);
+  }
 });
 
 async function sendAction(action) {
-  if (!sessionToken) return false;
+  if (!sessionToken) return null;
   try {
     const res  = await fetch("/api/confirm", {
       method:  "POST",
@@ -262,10 +269,34 @@ async function sendAction(action) {
     });
     const data = await res.json();
     sessionToken = null;
-    return data.success;
+    return data.success ? data : null;
   } catch (err) {
     alert(`שגיאת תקשורת: ${err.message}`);
-    return false;
+    return null;
+  }
+}
+
+async function pollJob(jobId) {
+  try {
+    const res  = await fetch(`/api/status/${jobId}`);
+    const data = await res.json();
+
+    doneDetail.textContent = data.detail || "";
+
+    if (data.status === "done") {
+      doneGlyph.textContent = "✅";
+      doneTitle.textContent = "הושלם בהצלחה!";
+      doneRing.className    = "done-ring success";
+    } else if (data.status === "error") {
+      doneGlyph.textContent = "❌";
+      doneTitle.textContent = "שגיאה";
+      doneRing.className    = "done-ring error";
+    } else {
+      // still running/pending — poll again in 2s
+      setTimeout(() => pollJob(jobId), 2000);
+    }
+  } catch {
+    setTimeout(() => pollJob(jobId), 2000);
   }
 }
 

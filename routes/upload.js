@@ -1,12 +1,14 @@
 "use strict";
 
-const express   = require("express");
-const multer    = require("multer");
-const path      = require("path");
-const fs        = require("fs");
-const config    = require("../config");
-const validate  = require("../validation");
-const db        = require("../db/database");
+const express            = require("express");
+const multer             = require("multer");
+const path               = require("path");
+const fs                 = require("fs");
+const config             = require("../config");
+const validate           = require("../validation");
+const db                 = require("../db/database");
+const { createJob, getJob } = require("../jobs/jobStore");
+const { runAutomation }  = require("../automation");
 
 const router = express.Router();
 
@@ -116,13 +118,28 @@ router.post("/confirm", (req, res) => {
     return res.status(400).json({ success: false, message: "סשן לא תקין — יש להעלות את הקובץ מחדש" });
   }
 
-  const { uploadId } = sessions.get(sessionToken);
+  const { uploadId, rows } = sessions.get(sessionToken);
   sessions.delete(sessionToken);
 
-  const status = action === "cancel" ? "cancelled" : "confirmed";
-  db.updateStatus(uploadId, status);
+  if (action === "cancel") {
+    db.updateStatus(uploadId, "cancelled");
+    return res.json({ success: true, status: "cancelled" });
+  }
 
-  return res.json({ success: true, status });
+  // Confirmed — start automation in background
+  db.updateStatus(uploadId, "confirmed");
+  const jobId = createJob();
+  setImmediate(() => runAutomation(jobId, rows));
+
+  return res.json({ success: true, status: "confirmed", jobId });
+});
+
+// ── GET /api/status/:jobId ────────────────────────────────────────────────────
+
+router.get("/status/:jobId", (req, res) => {
+  const job = getJob(req.params.jobId);
+  if (!job) return res.status(404).json({ success: false, message: "עבודה לא נמצאה" });
+  return res.json({ success: true, ...job });
 });
 
 // ── GET /api/uploads ──────────────────────────────────────────────────────────
