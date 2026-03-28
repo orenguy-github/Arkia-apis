@@ -8,6 +8,8 @@ const { login }                 = require("./steps/login");
 const { acceptTerms }           = require("./steps/termsAndConditions");
 const { selectInboundFlight }   = require("./steps/manifestOptions");
 const { enterFlightInfo }       = require("./steps/flightInfo");
+const { submitCrewInfo }        = require("./steps/crewInfo");
+const { enterPassengerInfo }    = require("./steps/passengerInfo");
 
 /**
  * Run the automation flow in the background.
@@ -51,16 +53,47 @@ async function runAutomation(jobId, rows) {
       : Number(rows.flight["Passengers"] || 0);
     const batchPax   = Math.min(totalPax, 50);
     const remaining  = totalPax - batchPax;
+
+    // Determine which passengers to submit in this batch
+    const paxOffset  = rows._paxOffset !== undefined ? rows._paxOffset : 0;
+    const paxBatch   = (rows.pax || []).slice(paxOffset, paxOffset + batchPax);
+
     await enterFlightInfo(page, rows.flight, batchPax);
+
+    // ── Step 5: Skip Crew Information ──────────────────────────
+    setStatus(jobId, "running", "מדלג על פרטי צוות...");
+    await submitCrewInfo(page);
+
+    // ── Step 6: Fill Passenger Information (5 per page) ────────
+    let submitted = 0;
+    while (submitted < paxBatch.length) {
+      const chunk  = paxBatch.slice(submitted, submitted + 5);
+      const isLast = submitted + chunk.length >= paxBatch.length;
+      setStatus(jobId, "running", `ממלא נוסעים ${submitted + 1}–${submitted + chunk.length} מתוך ${batchPax}...`);
+
+      if (!isLast) {
+        // Fill this chunk then click "Add Passengers" to load the next 5-slot form
+        await enterPassengerInfo(page, chunk, false);
+        submitted += chunk.length;
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: "domcontentloaded" }).catch(() => {}),
+          page.getByRole("button", { name: "Add Passengers" }).click(),
+        ]);
+      } else {
+        // Last chunk — fill and click "Review Manifest"
+        await enterPassengerInfo(page, chunk, true);
+        submitted += chunk.length;
+      }
+    }
 
     // ── Done ───────────────────────────────────────────────────
     if (remaining > 0) {
-      const contToken = storeContinuation(rows, remaining);
+      const contToken = storeContinuation(rows, remaining, paxOffset + batchPax);
       setStatus(jobId, "done",
         `הוזנו ${batchPax} מתוך ${totalPax} נוסעים — נותרו ${remaining}`,
         { remainingPax: remaining, contToken });
     } else {
-      setStatus(jobId, "done", "פרטי הטיסה הוזנו בהצלחה");
+      setStatus(jobId, "done", "פרטי הנוסעים הוזנו בהצלחה — ניתן לבצע Submit באתר eAPIS");
     }
 
   } catch (err) {

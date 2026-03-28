@@ -147,7 +147,7 @@ router.post("/continue", (req, res) => {
   deleteContinuation(contToken);
 
   const jobId = createJob();
-  const rows  = { ...cont.rows, _paxOverride: cont.remainingPax };
+  const rows  = { ...cont.rows, _paxOverride: cont.remainingPax, _paxOffset: cont.paxOffset || 0 };
   enqueue(jobId, rows, runAutomation);
 
   return res.json({ success: true, jobId });
