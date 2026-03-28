@@ -16,7 +16,7 @@ const { enterFlightInfo }       = require("./steps/flightInfo");
  * @param {string}   jobId
  * @param {object}   rows  - { flight: {}, pax: [] }
  */
-const AUTOMATION_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+const AUTOMATION_TIMEOUT_MS = 30_000; // 30 seconds
 
 async function runAutomation(jobId, rows) {
   let browser;
@@ -29,6 +29,7 @@ async function runAutomation(jobId, rows) {
     setStatus(jobId, "running", "מאתחל דפדפן...");
     browser = await chromium.launch({ headless: config.HEADLESS });
     const page = await browser.newPage();
+    page.setDefaultTimeout(15_000); // 15s per step
 
     // ── Step 1: Login ──────────────────────────────────────────
     setStatus(jobId, "running", "מתחבר לאתר eAPIS...");
