@@ -16,7 +16,7 @@
  * @param {boolean}  isLast     - true → click "Review Manifest"; false → caller clicks "Add Passengers"
  * @param {Function} onProgress - called with 0-based index within batch before each fill
  */
-async function enterPassengerInfo(page, paxRows, isLast, onProgress) {
+async function enterPassengerInfo(page, paxRows, isLast) {
   await page.waitForLoadState("domcontentloaded");
   await page.waitForSelector("#pax1");
 
@@ -32,7 +32,6 @@ async function enterPassengerInfo(page, paxRows, isLast, onProgress) {
   }
 
   for (let i = 0; i < batch.length; i++) {
-    if (onProgress) onProgress(i);
 
     const pax = batch[i];
     const box = page.locator(`#pax${i + 1}`);

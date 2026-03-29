@@ -69,18 +69,12 @@ async function runAutomation(jobId, rows) {
     // ── Step 6: Fill Passenger Information (5 per page) ────────
     let submitted = 0;
     while (submitted < paxBatch.length) {
-      const chunk      = paxBatch.slice(submitted, submitted + 5);
-      const isLast     = submitted + chunk.length >= paxBatch.length;
-      const chunkStart = submitted; // capture for closure
-
-      // Progress callback: called before each individual passenger fill
-      const onProgress = (indexInChunk) => {
-        const absIndex = chunkStart + indexInChunk + 1; // 1-based absolute position
-        setStatus(jobId, "running", `מעדכן פרטי נוסע ${absIndex} מתוך ${batchPax}...`);
-      };
+      const chunk  = paxBatch.slice(submitted, submitted + 5);
+      const isLast = submitted + chunk.length >= paxBatch.length;
+      setStatus(jobId, "running", `ממלא נוסעים ${submitted + 1}–${submitted + chunk.length} מתוך ${batchPax}...`);
 
       if (!isLast) {
-        await enterPassengerInfo(page, chunk, false, onProgress);
+        await enterPassengerInfo(page, chunk, false);
         submitted += chunk.length;
         await Promise.all([
           page.waitForNavigation({ waitUntil: "domcontentloaded" }).catch(() => {}),
@@ -88,7 +82,7 @@ async function runAutomation(jobId, rows) {
         ]);
         await assertNoPageErrors(page);
       } else {
-        await enterPassengerInfo(page, chunk, true, onProgress);
+        await enterPassengerInfo(page, chunk, true);
         submitted += chunk.length;
       }
     }

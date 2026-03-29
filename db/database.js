@@ -103,10 +103,6 @@ const stmtDeleteUser = db.prepare(`
   DELETE FROM users WHERE id = ?
 `);
 
-const stmtCountUsers = db.prepare(`
-  SELECT COUNT(*) AS cnt FROM users
-`);
-
 function createUser(username, passwordHash, role) {
   stmtInsertUser.run({ username, password_hash: passwordHash, role });
 }
@@ -127,11 +123,15 @@ function deleteUser(id) {
   stmtDeleteUser.run(id);
 }
 
+// Ensures the admin user always exists — INSERT OR IGNORE so existing password is never overwritten.
+// This means the admin is recreated after a DB wipe (e.g. fresh deploy) without affecting other users.
+const stmtSeedAdmin = db.prepare(`
+  INSERT OR IGNORE INTO users (username, password_hash, role)
+  VALUES (?, ?, 'admin')
+`);
+
 function seedAdminUser(username, passwordHash) {
-  const { cnt } = stmtCountUsers.get();
-  if (cnt === 0) {
-    stmtInsertUser.run({ username, password_hash: passwordHash, role: "admin" });
-  }
+  stmtSeedAdmin.run(username, passwordHash);
 }
 
 module.exports = { logUpload, updateStatus, getAllUploads, getUploadById, createUser, getUserByUsername, getUserById, getAllUsers, deleteUser, seedAdminUser };
