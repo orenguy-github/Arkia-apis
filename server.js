@@ -43,6 +43,9 @@ app.use(session({
   cookie:            { maxAge: 8 * 60 * 60 * 1000 }, // 8 hours
 }));
 
+// Public health-check — used by cron-job.org to keep the server awake
+app.get("/ping", (_req, res) => res.send("ok"));
+
 app.use("/api/auth", authRoutes);
 
 // Public — job status polling uses a random UUID as the identifier;
