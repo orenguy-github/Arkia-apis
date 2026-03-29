@@ -14,10 +14,10 @@
   --border:       #143354;
   --border-hi:    #1c4f82;
 
-  --pink:         #EE2F7F;
-  --pink-soft:    #F55A96;
-  --pink-glow:    rgba(238, 47, 127, 0.15);
-  --pink-dim:     rgba(238, 47, 127, 0.35);
+  --pink:         #ED5530;
+  --pink-soft:    #F2704F;
+  --pink-glow:    rgba(237, 85, 48, 0.15);
+  --pink-dim:     rgba(237, 85, 48, 0.35);
 
   --blue:         #3db8ff;
   --green:        #00e5a0;
@@ -59,7 +59,7 @@ body {
 .bg-glow {
   position: fixed; inset: 0; pointer-events: none; z-index: 0;
   background:
-    radial-gradient(ellipse 70% 35% at 50% 105%, rgba(238, 47, 127, .08) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 35% at 50% 105%, rgba(237, 85, 48, .08) 0%, transparent 70%),
     radial-gradient(ellipse 90% 55% at 50% -5%,  rgba(10, 40, 90, .6)   0%, transparent 65%);
 }
 
@@ -151,8 +151,8 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1;   box-shadow: 0 0 0   0   rgba(238,47,127,.4); }
-  50%       { opacity: .7; box-shadow: 0 0 0 5px rgba(238,47,127,0);   }
+  0%, 100% { opacity: 1;   box-shadow: 0 0 0   0   rgba(237,85,48,.4); }
+  50%       { opacity: .7; box-shadow: 0 0 0 5px rgba(237,85,48,0);   }
 }
 
 /* ── Main panel ─────────────────────────────────────────────────── */
@@ -165,7 +165,7 @@ body {
   box-shadow:
     0 0 0 1px rgba(28, 79, 130, .2),
     0 24px 64px rgba(0, 0, 0, .65),
-    0 0 60px rgba(238, 47, 127, .03);
+    0 0 60px rgba(237, 85, 48, .03);
 }
 
 /* ── Panel top bar ──────────────────────────────────────────────── */
@@ -234,15 +234,15 @@ section.active { display: block; }
 
 .drop-zone:hover {
   border-color: var(--pink);
-  background: rgba(238,47,127,.04);
-  box-shadow: 0 0 0 4px rgba(238,47,127,.06), inset 0 0 20px rgba(238,47,127,.03);
+  background: rgba(237,85,48,.04);
+  box-shadow: 0 0 0 4px rgba(237,85,48,.06), inset 0 0 20px rgba(237,85,48,.03);
 }
 
 .drop-zone.drag-over {
   border-color: var(--pink);
   border-style: solid;
-  background: rgba(238,47,127,.07);
-  box-shadow: 0 0 0 4px rgba(238,47,127,.12);
+  background: rgba(237,85,48,.07);
+  box-shadow: 0 0 0 4px rgba(237,85,48,.12);
 }
 
 .dz-body {
@@ -259,7 +259,7 @@ section.active { display: block; }
 .drop-zone:hover .dz-icon,
 .drop-zone.drag-over .dz-icon {
   color: var(--pink);
-  filter: drop-shadow(0 0 6px rgba(238,47,127,.5));
+  filter: drop-shadow(0 0 6px rgba(237,85,48,.5));
 }
 
 .dz-text {
@@ -333,7 +333,7 @@ section.active { display: block; }
 .btn-upload:hover:not(:disabled) {
   background: var(--pink-soft);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(238,47,127,.35);
+  box-shadow: 0 6px 20px rgba(237,85,48,.35);
 }
 
 .btn-upload:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
@@ -388,7 +388,7 @@ section.active { display: block; }
   color: var(--pink);
   line-height: 1;
   letter-spacing: .05em;
-  text-shadow: 0 0 20px rgba(238,47,127,.4);
+  text-shadow: 0 0 20px rgba(237,85,48,.4);
 }
 
 .bp-ready {
@@ -448,7 +448,7 @@ section.active { display: block; }
 .btn-confirm:hover:not(:disabled) {
   background: var(--pink-soft);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(238,47,127,.35);
+  box-shadow: 0 6px 20px rgba(237,85,48,.35);
 }
 
 .btn-confirm:disabled { opacity: .5; cursor: not-allowed; }
