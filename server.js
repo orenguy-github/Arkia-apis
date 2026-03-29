@@ -69,7 +69,10 @@ if (config.ADMIN_PASSWORD === "Arkia2024!") {
   console.warn("⚠️  Using default admin password — change ADMIN_PASSWORD env var in production!");
 }
 
-// Seed optional second permanent user (set SEED_USER + SEED_PASSWORD env vars)
+// Seed permanent operator user
+db.seedAdminUser("arkia", bcrypt.hashSync("Arkia2026!", 10), "user");
+
+// Seed optional additional user (set SEED_USER + SEED_PASSWORD env vars)
 if (config.SEED_USER && config.SEED_PASSWORD) {
   const seedHash = bcrypt.hashSync(config.SEED_PASSWORD, 10);
   db.seedAdminUser(config.SEED_USER, seedHash, config.SEED_ROLE);
