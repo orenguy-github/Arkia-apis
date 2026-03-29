@@ -76,7 +76,7 @@ async function runAutomation(jobId, rows) {
       // Progress callback: called before each individual passenger fill
       const onProgress = (indexInChunk) => {
         const absIndex = chunkStart + indexInChunk + 1; // 1-based absolute position
-        setStatus(jobId, "running", `ממלא נוסע ${absIndex} מתוך ${batchPax}...`);
+        setStatus(jobId, "running", `מעדכן פרטי נוסע ${absIndex} מתוך ${batchPax}...`);
       };
 
       if (!isLast) {
