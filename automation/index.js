@@ -69,23 +69,26 @@ async function runAutomation(jobId, rows) {
     // ── Step 6: Fill Passenger Information (5 per page) ────────
     let submitted = 0;
     while (submitted < paxBatch.length) {
-      const chunk  = paxBatch.slice(submitted, submitted + 5);
-      const isLast = submitted + chunk.length >= paxBatch.length;
-      setStatus(jobId, "running", `ממלא נוסעים ${submitted + 1}–${submitted + chunk.length} מתוך ${batchPax}...`);
+      const chunk      = paxBatch.slice(submitted, submitted + 5);
+      const isLast     = submitted + chunk.length >= paxBatch.length;
+      const chunkStart = submitted; // capture for closure
+
+      // Progress callback: called before each individual passenger fill
+      const onProgress = (indexInChunk) => {
+        const absIndex = chunkStart + indexInChunk + 1; // 1-based absolute position
+        setStatus(jobId, "running", `ממלא נוסע ${absIndex} מתוך ${batchPax}...`);
+      };
 
       if (!isLast) {
-        // Fill this chunk then click "Add Passengers" to load the next 5-slot form
-        await enterPassengerInfo(page, chunk, false);
+        await enterPassengerInfo(page, chunk, false, onProgress);
         submitted += chunk.length;
         await Promise.all([
           page.waitForNavigation({ waitUntil: "domcontentloaded" }).catch(() => {}),
           page.getByRole("button", { name: "Add Passengers" }).click(),
         ]);
-        // If eAPIS rejected the form (validation errors), stop and report them
         await assertNoPageErrors(page);
       } else {
-        // Last chunk — fill and click "Review Manifest"
-        await enterPassengerInfo(page, chunk, true);
+        await enterPassengerInfo(page, chunk, true, onProgress);
         submitted += chunk.length;
       }
     }

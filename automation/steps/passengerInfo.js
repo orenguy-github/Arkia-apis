@@ -4,20 +4,19 @@
  * Step: Fill Passenger Information form (up to 5 passengers per page load).
  *
  * eAPIS wraps each passenger's fields in a container with id="pax1".."pax5".
- * All locators are scoped to that container, so there is no global nth() indexing —
- * each container has exactly one instance of every field.
+ * All locators are scoped to that container — no global nth() indexing.
+ * Within each container: MM/DD/YYYY nth(0) = DOB, nth(1) = Expiration Date.
  *
- * Within each pax container there are two date pairs (DOB and Expiration),
- * so MM/DD/YYYY still use nth(0) for DOB and nth(1) for Expiration.
+ * Speed: all fields for a single passenger are filled simultaneously (Promise.all).
+ * Progress: onProgress(absIndex) is called before each passenger fill so the
+ *           orchestrator can update the job status per individual passenger.
  *
- * After "Add Passengers" the page reloads with fresh pax1..pax5 containers,
- * so passenger 6 goes into pax1, passenger 7 into pax2, etc.
- *
- * @param {object}  page    - Playwright page
- * @param {Array}   paxRows - Array of passenger objects (max 5)
- * @param {boolean} isLast  - true → click "Review Manifest"; false → caller clicks "Add Passengers"
+ * @param {object}   page       - Playwright page
+ * @param {Array}    paxRows    - Array of passenger objects (max 5)
+ * @param {boolean}  isLast     - true → click "Review Manifest"; false → caller clicks "Add Passengers"
+ * @param {Function} onProgress - called with 0-based index within batch before each fill
  */
-async function enterPassengerInfo(page, paxRows, isLast) {
+async function enterPassengerInfo(page, paxRows, isLast, onProgress) {
   await page.waitForLoadState("domcontentloaded");
   await page.waitForSelector("#pax1");
 
@@ -33,54 +32,44 @@ async function enterPassengerInfo(page, paxRows, isLast) {
   }
 
   for (let i = 0; i < batch.length; i++) {
-    const pax = batch[i];
-    const box = page.locator(`#pax${i + 1}`); // scope all fills to this passenger's div
+    if (onProgress) onProgress(i);
 
+    const pax = batch[i];
+    const box = page.locator(`#pax${i + 1}`);
     const dob = splitDate(val(pax, "Date of Birth"));
     const exp = splitDate(val(pax, "Expiration Date"));
 
-    // ── Name ───────────────────────────────────────────────────────
-    await box.getByRole("textbox", { name: /last name/i }).fill(val(pax, "Last Name"));
-    await box.getByRole("textbox", { name: /first name/i }).fill(val(pax, "First Name"));
+    // Fill all text fields and the Sex combobox simultaneously
+    await Promise.all([
+      box.getByRole("textbox", { name: /last name/i }).fill(val(pax, "Last Name")),
+      box.getByRole("textbox", { name: /first name/i }).fill(val(pax, "First Name")),
+      box.getByRole("combobox", { name: /sex/i }).selectOption(val(pax, "Sex")),
+      // Date of Birth
+      box.getByRole("textbox", { name: /^MM$/i }).nth(0).fill(dob.mm),
+      box.getByRole("textbox", { name: /^DD$/i }).nth(0).fill(dob.dd),
+      box.getByRole("textbox", { name: /^YYYY$/i }).nth(0).fill(dob.yyyy),
+      // Personal info
+      box.getByRole("textbox", { name: /country of residence/i }).fill(val(pax, "Country of Residence")),
+      box.getByRole("textbox", { name: /citi?zen/i }).fill(val(pax, "Citizenship")),
+      // Address
+      box.getByRole("textbox", { name: /street address/i }).fill(val(pax, "Street Address")),
+      box.getByRole("textbox", { name: /^city/i }).fill(val(pax, "City")),
+      box.getByRole("textbox", { name: /^state/i }).fill(val(pax, "State")),
+      box.getByRole("textbox", { name: /zip/i }).fill(val(pax, "ZIP")),
+      // Document
+      box.getByRole("textbox", { name: /document number/i }).first().fill(val(pax, "Document Number")),
+      box.getByRole("textbox", { name: /country of issuance/i }).first().fill(val(pax, "Country of Issuance")),
+      // Expiration Date
+      box.getByRole("textbox", { name: /^MM$/i }).nth(1).fill(exp.mm),
+      box.getByRole("textbox", { name: /^DD$/i }).nth(1).fill(exp.dd),
+      box.getByRole("textbox", { name: /^YYYY$/i }).nth(1).fill(exp.yyyy),
+    ]);
 
-    // ── Sex combobox ───────────────────────────────────────────────
-    await box.getByRole("combobox", { name: /sex/i }).selectOption(val(pax, "Sex"));
-
-    // ── Date of Birth (nth 0 within this container) ────────────────
-    await box.getByRole("textbox", { name: /^MM$/i }).nth(0).fill(dob.mm);
-    await box.getByRole("textbox", { name: /^DD$/i }).nth(0).fill(dob.dd);
-    await box.getByRole("textbox", { name: /^YYYY$/i }).nth(0).fill(dob.yyyy);
-
-    // ── Country of Residence ───────────────────────────────────────
-    await box.getByRole("textbox", { name: /country of residence/i })
-      .fill(val(pax, "Country of Residence"));
-
-    // ── Citizenship (eAPIS may say "Country of Citizenship") ───────
-    await box.getByRole("textbox", { name: /citi?zen/i })
-      .fill(val(pax, "Citizenship"));
-
-    // ── Address ────────────────────────────────────────────────────
-    await box.getByRole("textbox", { name: /street address/i }).fill(val(pax, "Street Address"));
-    await box.getByRole("textbox", { name: /^city/i }).fill(val(pax, "City"));
-    await box.getByRole("textbox", { name: /^state/i }).fill(val(pax, "State"));
-    await box.getByRole("textbox", { name: /zip/i }).fill(val(pax, "ZIP"));
-
-    // ── Document ───────────────────────────────────────────────────
-    await box.getByRole("textbox", { name: /document number/i }).first().fill(val(pax, "Document Number"));
-
-    // Document Type: try option value "P" first, fall back to text "Passport"
+    // Document Type: try option value "P" first, fall back to visible text "Passport"
     const docType = box.getByRole("combobox", { name: /document type/i }).first();
     await docType.selectOption("P").catch(async () => {
       await docType.selectOption("Passport");
     });
-
-    await box.getByRole("textbox", { name: /country of issuance/i }).first()
-      .fill(val(pax, "Country of Issuance"));
-
-    // ── Expiration Date (nth 1 within this container) ──────────────
-    await box.getByRole("textbox", { name: /^MM$/i }).nth(1).fill(exp.mm);
-    await box.getByRole("textbox", { name: /^DD$/i }).nth(1).fill(exp.dd);
-    await box.getByRole("textbox", { name: /^YYYY$/i }).nth(1).fill(exp.yyyy);
   }
 
   // ── Review Manifest (only on the last chunk) ──────────────────────
