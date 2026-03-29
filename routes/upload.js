@@ -153,15 +153,6 @@ router.post("/continue", (req, res) => {
   return res.json({ success: true, jobId });
 });
 
-// ── GET /api/status/:jobId ────────────────────────────────────────────────────
-
-router.get("/status/:jobId", (req, res) => {
-  const job = getJob(req.params.jobId);
-  if (!job) return res.status(404).json({ success: false, message: "עבודה לא נמצאה" });
-  const { uploadId, ...jobData } = job;
-  return res.json({ success: true, ...jobData });
-});
-
 // ── GET /api/uploads ──────────────────────────────────────────────────────────
 
 router.get("/uploads", (_req, res) => {

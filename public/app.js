@@ -332,9 +332,27 @@ async function sendAction(action) {
 
 async function pollJob(jobId) {
   try {
-    const res  = await fetch(`/api/status/${jobId}`);
-    const data = await res.json();
+    const res = await fetch(`/api/status/${jobId}`);
 
+    // 401 → session expired; send back to login
+    if (res.status === 401) {
+      doneGlyph.textContent = "🔒";
+      doneTitle.textContent = "פג תוקף ההתחברות";
+      doneDetail.textContent = "יש להתחבר מחדש";
+      doneRing.className = "done-ring error";
+      return;
+    }
+
+    // 404 → server restarted and lost job state
+    if (res.status === 404) {
+      doneGlyph.textContent = "❌";
+      doneTitle.textContent = "העבודה לא נמצאה";
+      doneDetail.textContent = "השרת הופעל מחדש — יש להתחיל מחדש";
+      doneRing.className = "done-ring error";
+      return;
+    }
+
+    const data = await res.json();
     doneDetail.textContent = data.detail || "";
 
     if (data.status === "done") {

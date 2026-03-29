@@ -28,6 +28,7 @@ const authRoutes  = require("./routes/auth");
 const adminRoutes = require("./routes/admin");
 const uploadRoutes = require("./routes/upload");
 const db          = require("./db/database");
+const { getJob }  = require("./jobs/jobStore");
 
 const PUBLIC_DIR = path.join(__dirname, "public");
 
@@ -43,6 +44,16 @@ app.use(session({
 }));
 
 app.use("/api/auth", authRoutes);
+
+// Public — job status polling uses a random UUID as the identifier;
+// no sensitive data is exposed and no auth is needed to check your own job.
+app.get("/api/status/:jobId", (req, res) => {
+  const job = getJob(req.params.jobId);
+  if (!job) return res.status(404).json({ success: false, message: "עבודה לא נמצאה — ייתכן שהשרת הופעל מחדש" });
+  const { uploadId: _, ...jobData } = job;
+  return res.json({ success: true, ...jobData });
+});
+
 app.use("/api/admin", requireAuth, requireAdmin, adminRoutes);
 app.use("/api", requireAuth, uploadRoutes);
 
