@@ -27,4 +27,10 @@ module.exports = {
   SESSION_SECRET: process.env.SESSION_SECRET || "arkia-apis-dev-secret",
   ADMIN_USER:     process.env.ADMIN_USER     || "admin",
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "Arkia2024!",
+
+  // Optional second permanent user (seeded on every startup, survives DB wipe)
+  // Set SEED_USER + SEED_PASSWORD in Render environment to activate
+  SEED_USER:      process.env.SEED_USER      || "",
+  SEED_PASSWORD:  process.env.SEED_PASSWORD  || "",
+  SEED_ROLE:      process.env.SEED_ROLE      || "user",
 };
