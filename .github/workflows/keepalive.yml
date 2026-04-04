@@ -1,0 +1,17 @@
+name: Keep Render Awake
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"  # every 10 minutes
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping server
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://arkia-apis.onrender.com/ping)
+          echo "Response: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Warning: got $STATUS instead of 200"
+          fi
