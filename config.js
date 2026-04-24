@@ -28,6 +28,11 @@ module.exports = {
   ADMIN_USER:     process.env.ADMIN_USER     || "admin",
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "Arkia2024!",
 
+  // Email notifications (set all three to activate)
+  SMTP_USER:      process.env.SMTP_USER      || "",  // Gmail address
+  SMTP_PASS:      process.env.SMTP_PASS      || "",  // Gmail App Password
+  NOTIFY_EMAIL:   process.env.NOTIFY_EMAIL   || "",  // Recipient email
+
   // Optional second permanent user (seeded on every startup, survives DB wipe)
   // Set SEED_USER + SEED_PASSWORD in Render environment to activate
   SEED_USER:      process.env.SEED_USER      || "",

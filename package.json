@@ -15,6 +15,7 @@
     "express": "^5.2.1",
     "express-session": "^1.18.1",
     "multer": "^2.0.0",
+    "nodemailer": "^8.0.5",
     "playwright": "^1.51.1",
     "xlsx": "^0.18.5"
   }

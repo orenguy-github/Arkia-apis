@@ -11,6 +11,7 @@ const { createJob, getJob }                          = require("../jobs/jobStore
 const { enqueue }                                    = require("../jobs/jobQueue");
 const { runAutomation }                              = require("../automation");
 const { getContinuation, deleteContinuation }        = require("../jobs/continuationStore");
+const { notifyUpload }                               = require("../utils/mailer");
 
 const router = express.Router();
 
@@ -120,7 +121,7 @@ router.post("/confirm", (req, res) => {
     return res.status(400).json({ success: false, message: "סשן לא תקין — יש להעלות את הקובץ מחדש" });
   }
 
-  const { uploadId, rows } = sessions.get(sessionToken);
+  const { uploadId, rows, rowCount, originalName } = sessions.get(sessionToken);
   sessions.delete(sessionToken);
 
   if (action === "cancel") {
@@ -132,6 +133,13 @@ router.post("/confirm", (req, res) => {
   db.updateStatus(uploadId, "confirmed");
   const jobId = createJob(uploadId);
   enqueue(jobId, rows, runAutomation);
+
+  // Fire-and-forget email notification
+  notifyUpload({
+    originalName,
+    rowCount,
+    uploadedBy: req.session?.user?.username || "unknown",
+  });
 
   return res.json({ success: true, status: "confirmed", jobId });
 });
